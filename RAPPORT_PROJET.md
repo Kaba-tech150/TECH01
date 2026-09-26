@@ -1,5 +1,110 @@
 # RAPPORT PROJET — SECU GUARD
 
+> ## 🟢 REPRISE — Où en est le projet au 2026-09-26 (fin de session)
+>
+> **Lire cette section en premier.** Le reste du document est l'historique de
+> diagnostic, conservé tel quel. Certaines mentions plus bas sont périmées et
+> contredisent cet état — se fier à ce bloc.
+>
+> ### Phrase à retenir
+> **Tout compile, la base est en ligne, rien n'a encore été vu sur un téléphone.**
+> Le test sur appareil est la seule chose qui transforme « ça compile » en « ça marche ».
+>
+> ---
+>
+> ### ✅ Fait et vérifié
+>
+> **Base Supabase — en production**
+> - 13 tables, RLS active, 8 fonctions de transition d'état.
+> - Migration `20260925001100_villes.sql` **appliquée** (vérifié : `villes` liste dans `check:supabase`).
+> - `npm run check:supabase` → `RESULTAT : conforme`.
+> - Commandes de reprise : `npm run check:supabase`, puis coller
+>   `supabase/verification/VERIFICATION_RAPIDE.sql` dans le SQL Editor
+>   (**16 `OK` attendus**).
+>
+> **Sauvegarde**
+> - 1 commit : `10c92ac` — *feat: socle Supabase, parcours client et identite SecuGuard*.
+> - Poussé sur `https://github.com/Kaba-tech150/TECH01` (dépôt privé).
+> - Identité locale : `Kaba-tech150 <Kaba-tech150@users.noreply.github.com>`.
+> - `.gitattributes` ajouté : dépôt verrouillé en LF, plus de bruit CRLF dans les diffs.
+> - `.env` ignoré, `.env.example` sans valeur. Aucun secret dans l'historique.
+>
+> **Identité visuelle — refonte complète**
+> - Tokens issus des variables Figma dans `src/constants/index.ts` (palette, `FONT_FAMILIES`, `SHADOWS`, `HAIRLINE_*`).
+> - Plus Jakarta Sans (titres) + Manrope (texte), chargées dans `src/app/_layout.tsx`.
+> - Primitives réécrites : `Button`, `Card`, `Badge`, `Typography`, `SectionHeader`, `AppHeader`.
+> - Accueil client reconstruit, onglets passés des emojis aux icônes Material.
+> - Maquette de référence conservée dans `design/` (image, `code.html`, `DESIGN.md`).
+>
+> **Contrôles**
+> - `npx tsc --noEmit` → OK
+> - `npx eslint src` → exit 0
+> - `npx expo export --platform web` → OK, **38 routes**
+>
+> ---
+>
+> ### ⚠️ Fait, mais JAMAIS VU sur un écran
+>
+> Aucun test runtime n'a été effectué. Ces écrans compilent, rien ne prouve
+> leur rendu. C'est la principale réserve de ce bilan.
+>
+> - `src/app/(client)/index.tsx` — accueil refondu
+> - `src/app/(client)/mission/new.tsx` — création de mission
+> - `src/app/(client)/missions.tsx` — liste des missions
+> - Les polices, le bouton cyan, l'en-tête, les proportions
+>
+> ### ❌ Non fait
+>
+> 1. **~35 routes non migrées** (auth, admin, agent, company, startup). Elles
+>    gardent les onglets à emojis et surtout des `fontWeight` inline qui
+>    **retombent sur la police système** — les polices personnalisées étant
+>    désormais chargées, l'incohérence est visible.
+> 2. **`missions.city` sans clé étrangère** vers `villes.nom`. L'UI contraint
+>    la ville, mais un client malveillant peut envoyer une ville arbitraire en
+>    contournant le formulaire. **Seule réserve de sécurité restante.**
+> 3. `VERIFICATION_RAPIDE.sql` pas encore exécuté.
+> 4. Pays de lancement et liste définitive des villes non confirmés — les 8
+>    villes actuelles sont un exemple.
+>
+> ---
+>
+> ### 📌 Reprendre ici, dans cet ordre
+>
+> **1. Vérification base** (2 min, votre main)
+>    SQL Editor → coller `supabase/verification/VERIFICATION_RAPIDE.sql` → Run
+>    Attendu : 16 `OK`, 0 `ALERTE`.
+>    Le contrôle 16 vérifie qu'au moins une ville est active : s'il est en
+>    `ALERTE`, c'est que la liste de villes est vide.
+>
+> **2. Test sur appareil** — `npm start`, puis dérouler le parcours :
+>    inscription → calendrier → sélection ville → création mission →
+>    apparition du statut `Brouillon` dans « Mes missions ».
+>    Contrôle SQL de confirmation :
+>    ```sql
+>    select title, city, status, client_id, start_time, agent_count
+>    from public.missions order by created_at desc limit 5;
+>    ```
+>
+> **3. Migrer les ~35 routes restantes** au design.
+>
+> **4. Décider du sort de `missions.city`** : clé étrangère, ou helper RLS.
+>
+> ---
+>
+> ### 📌 Points laissés ouverts, en attente d'arbitrage
+>
+> - **Pays de lancement** : la liste de villes est un exemple, à confirmer.
+> - **`missions.city`** : voir ci-dessus.
+> - **Divergence du header** : `AppHeader.tsx` redéfinit ses couleurs en local
+>  (`#F8FAFC`, `#0066FF`) et ses polices à `'System'`, donc il s'écarte du
+>  design system. Choix fait manuellement, non corrigé.
+> - **Preuve dynamique de la RLS sur `villes`** : le contrôle 15 a été réécrit
+>  pour inspecter les **politiques** (et non les droits `anon`, qui passaient
+>  mécaniquement). C'est une preuve statique : la preuve à l'exécution
+>  demanderait une session de test avec un rôle `client`.
+
+
+
 ## État actuel
 Audit de reprise et premier lot du parcours de démarrage implémentés le **2026-09-25**.
 Audit senior de sécurité et d'architecture exécuté le **2026-09-25**.
@@ -80,7 +185,7 @@ Six incidents successifs ont révélé que **le code ne peut pas prouver son pro
 - La vérification du compte n’est pas implémentée : son type et son mécanisme restent à confirmer.
 - Aucun test de connexion réelle à Supabase, appel SQL, test sur appareil ou test de publication n’a été effectué.
 - Le dernier contrôle Supabase documenté a retourné `42501` (`permission denied for schema public`).
-- Les migrations locales n’ont pas été appliquées au projet Supabase distant.
+- ~~Les migrations locales n'ont pas été appliquées au projet Supabase distant.~~ → **PÉRIMÉ au 2026-09-26** : les 11 migrations sont appliquées, `check:supabase` renvoie « conforme ».
 - Les deux migrations locales créent la structure, les triggers et des helpers privés, mais ne contiennent pas les politiques RLS complètes du script `SUPABASE_SCHEMA_COMPLET.sql` ; leur comportement doit être validé sur un environnement de test.
 - **CONSTAT CRITIQUE 2026-09-25 :** aucune instruction `enable row level security` et aucun `create policy` n'existe dans les deux migrations. Les tables ne sont donc pas protégées par RLS tant que les politiques du script complet ne sont pas appliquées.
 - **CONSTAT CRITIQUE 2026-09-25 :** aucune table ne reçoit de `grant` vers `anon` ou `authenticated`. C'est la cause la plus probable de l'erreur `42501` (`permission denied for schema public`) observée sur le projet distant.
@@ -88,12 +193,12 @@ Six incidents successifs ont révélé que **le code ne peut pas prouver son pro
 - Les écrans des quatre rôles restent des ébauches : statistiques codées en dur, messages « Bientôt disponible » et **13 gestionnaires de boutons vides**.
 - Les parcours demande, recherche, sélection, réservation, affectation, suivi, check-in/check-out, documents, disponibilité, équipe, administration et rapports ne sont pas fonctionnels.
 - `src/features` et `src/stores` existent, mais aucun module métier suivi n’y a été trouvé.
-- TanStack Query et Zustand sont installés, mais aucun usage de ces bibliothèques n’a été trouvé dans `src`.
+- ~~TanStack Query et Zustand sont installés, mais aucun usage de ces bibliothèques n’a été trouvé dans `src`.~~ → **PÉRIMÉ au 2026-09-26** : TanStack Query est utilisé (missions, villes). Zustand reste inutilisé.
 - Aucun runner de tests automatisés n’est configuré.
 - `missions.service.ts` filtre les affectations avec `user.id`, alors que `agent_id` et `company_id` référencent les identifiants de `agent_profiles` et `company_profiles` : les listes agent/société doivent être corrigées avant utilisation.
 - Les changements d’état de mission et d’affectation ne passent pas encore par des fonctions backend testées.
 - L’audit npm documenté signale 14 vulnérabilités modérées ; aucune rétrogradation incompatible n’a été appliquée.
-- La branche `master` ne contient aucun commit et présente des changements staged, unstaged, supprimés et non suivis. Aucun historique de livraison fiable n’existe encore.
+- ~~La branche `master` ne contient aucun commit~~ → **PÉRIMÉ au 2026-09-26** : le dépôt est historisé et poussé, voir la section « 🟢 REPRISE » en tête.
 
 ## Parcours de démarrage cible
 Flux validé comme spécification UX, sans implémentation réalisée dans cet audit :
@@ -429,3 +534,6 @@ src/
 - **2026-09-26 :** `20260925000700_signup_triggers_fix.sql` créé (88 lignes). **L'inscription était cassée** : les deux triggers de bootstrap sont `SECURITY DEFINER` et écrivent dans `profiles`, `profile_roles` et `wallets`, trois tables sur lesquelles `00300` avait appliqué `force row level security`. Le `FORCE` soumet le propriétaire à ses propres politiques ; l'insertion dans `profile_roles` étant réservée à `is_admin()`, qui renvoie `false` car `auth.uid()` vaut `NULL` avant session, l'inscription entière échouait. **Une première version du correctif oubliait `profile_roles`**, et a été complétée après analyse du message `Database error saving new user` remonté par le journal technique.
 
 - **2026-09-25 :** outils de contrôle post-application livrés (mode d'exécution manuelle retenu). `supabase/verification/VERIFICATION_POST_MIGRATION.sql` : 14 contrôles **strictement en lecture seule** (pg_catalog / information_schema) — tables attendues, détection de drift (tables sans RLS), RLS activée et forcée, comptage des 32 politiques par table, permissions par rôle, écriture interdite sur colonnes sensibles (`profiles.role`, `profiles.email`, `missions.status`, `mission_assignments.status`), fonctions de transition et helpers privés, enums, triggers, index, récapitulatif. `scripts/check-supabase-access.js` + script npm `check:supabase` : rejoue le diagnostic API REST en lecture seule et sort en code 1 si anomalie. Exécution réelle contre le projet distant : **10 anomalies** — seules `profiles` et `missions` existent, les 10 autres tables renvoient `PGRST205`. Conclusion : le projet distant ne contient que 2 tables sur 12, l'hypothèse précédente d'un conflit de politiques RLS est infirmée. Sortie console en ASCII pour éviter l'affichage illisible des accents en console Windows.
+
+- **2026-09-26 (après-midi) — identité visuelle et sauvegarde.** Refonte graphique d'après la maquette Figma déposée dans `design/` (image + `code.html` + export des variables). Tokens réécrits dans `src/constants/index.ts` (palette Material 3, `FONT_FAMILIES`, `SHADOWS`, `HAIRLINE_*`) ; primitives `Button`, `Card`, `Badge`, `Typography` réécrites, `SectionHeader` et `AppHeader` créées ; accueil client reconstruit ; onglets passés des emojis aux icônes Material. Polices installées (`@expo-google-fonts/plus-jakarta-sans`, `manrope`), chargées dans `_layout.tsx` avec blocage du splash. **Correction de contraste** : le texte des aplats cyan `#00D2FF` passe en `#00566A` (4,6:1) au lieu du blanc (1,8:1) — invisible sur un écran de bureau, critique en lumière du jour. **Correction d'un bug préexistant** : `SafeAreaProvider` n'était monté nulle part, donc `useSafeAreaInsets()` renvoyait `{ top: 0 }` et les `SafeAreaView` de 5 écrans (welcome, onboarding, connexion, inscription, création de mission) ne protégeaient rien. **Chiffres fictifs de la maquette non repris** : « 142 agents », « 18 missions en attente » et la liste d'agents avec photos n'existent pas en base ; l'accueil calcule tout depuis `useClientMissions()` et `useVilles()`. Un état d'erreur distinct a été ajouté pour la couverture : sans lui, l'échec de `useVilles()` affichait « Chargement » indéfiniment, indiscernable d'un réseau lent. **`SafeAreaProvider` monté**, `types/assets.d.ts` créé (aucune déclaration d'image n'existait). Contrôle 15 de `VERIFICATION_RAPIDE.sql` réécrit : il portait sur les droits `anon`, qui passent mécaniquement puisque `anon` ne reçoit rien sur `villes` ; il inspecte désormais les **politiques**, seul élément qui distingue un admin d'un client, `authenticated` recevant volontairement des droits d'écriture en défense en profondeur. **Git initialisé** (aucun commit n'existait) : 1 commit `10c92ac`, 149 fichiers, poussé sur `github.com/Kaba-tech150/TECH01` (privé). `.gitattributes` ajouté pour verrouiller le dépôt en LF. **Réserve majeure du bilan : aucun test runtime n'a été effectué** — la refonte n'a jamais été vue sur un écran.
+
