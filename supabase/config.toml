@@ -1,0 +1,5 @@
+project_id = "secu-guard"
+
+[db.seed]
+enabled = false
+sql_paths = []

@@ -1,0 +1,24 @@
+# Fins de ligne : le dépôt est stocké en LF quelle que soit la plateforme.
+# Sans cette règle, Git convertit CRLF <-> LF a chaque commit sur Windows et
+# chaque diff affiche des lignes modifiees qui ne le sont pas reellement.
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion de fin de ligne.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Migrations et scripts SQL : CES.doit rester en LF, un script qui casse sur
+# un octet est le pire moyen de perdre une migration.
+*.sql text eol=lf
+
+# Fichiers verrouilles par Expo : generes, regeneres a chaque demarrage.
+package-lock.json -diff
