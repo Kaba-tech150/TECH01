@@ -29,6 +29,54 @@ export function useClientMissions() {
 }
 
 /**
+ * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
+ *
+ * Interroge l'API REST avec le jeton de session courant et journalise le
+ * CODE ET LE CORPS de la réponse.
+ *
+ * Le journal Metro n'affiche que le statut HTTP (`403`, `406`) et laisse
+ * l'erreur de côté. Or deux tables renvoient deux statuts DIFFÉRENTS pour la
+ * même session valide : `profiles` en 406, `missions` en 403. Aucun code
+ * source ne permet de dire si c'est un droit manquant, une colonne inconnue,
+ * ou un rôle inattendu.
+ *
+ * `fetch` brut est donc utilisé ici, et non le client Supabase : le client
+ * transforme les erreurs en objets, ce qui est précisément l'information qu'on
+ * cherche à récupérer.
+ */
+async function diagnostiquerReseau(accessToken: string): Promise<void> {
+  const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const apikey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  if (!base || !apikey) return;
+
+  const cibles = [
+    '/rest/v1/profiles?select=*&limit=1',
+    '/rest/v1/missions?select=*&limit=1',
+  ];
+
+  for (const cible of cibles) {
+    try {
+      const reponse = await fetch(base + cible, {
+        headers: {
+          apikey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const corps = await reponse.text();
+      console.warn(
+        `[SecuGuard][diag] ${cible.split('?')[0]} -> ${reponse.status} ` +
+          `| corps=${corps.slice(0, 260)}`,
+      );
+    } catch (erreur) {
+      console.warn(
+        `[SecuGuard][diag] ${cible.split('?')[0]} -> erreur reseau ` +
+          `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+      );
+    }
+  }
+}
+
+/**
  * Création d'une mission.
  *
  * `client_id` EST ENVOYÉ — et c'est volontaire, après un long détour.
@@ -129,11 +177,16 @@ export function useCreateMission() {
       /*
        * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
        *
-       * Journalise le résultat de la VALIDATION, pas seulement la charge utile.
-       * Le journal du 2026-09-27 a montré que la charge utile ne suffisait pas :
-       * elle était correcte, et l'insertion a quand même échoué. Ce qui
-       * manquait, c'est la réponse du serveur sur le jeton.
+       * Le jeton est validé, mais deux tables répondent 403 et 406. On
+       * interroge l'API avec ce même jeton pour obtenir le code et le corps de
+       * la réponse, que le journal Metro n'affiche pas.
        */
+      const { data: donneesSession } = await supabase.auth.getSession();
+      const jeton = donneesSession.session?.access_token;
+      if (jeton) {
+        await diagnostiquerReseau(jeton);
+      }
+
       console.warn(
         `[SecuGuard][diag] mission — uid=${data.user.id} ` +
           `colonnes=${Object.keys(charge).sort().join(',')}`,
