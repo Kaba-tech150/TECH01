@@ -194,6 +194,7 @@ outil destructif hors chaîne.
 | `20260926001600` | **identité imposée par trigger `BEFORE INSERT`** | **[V]** **appliquée le 2026-09-27** — contrôles 18 et 19 à `OK` |
 | `20260926001800` | **restauration des droits de lecture des prestataires** | **[V]** **appliquée le 2026-09-27** — `agent_profiles_avec_profil = 200` |
 | `000001` | remise à zéro totale (destructif) | outil manuel — **ne plus jamais le rejouer** |
+| `20260926001900` | **agents visibles par les clients dans la recherche** | **[X]** **écrit, en attente d'application** |
 
 > **Statut de `01600`, établi par exécution et non par supposition.** La
 > migration échoue elle-même si le `DEFAULT` de `client_id` subsiste **ou** si
@@ -783,3 +784,69 @@ idempotent, avec auto-vérification. **Non appliqué.**
 - **[V]** `design/` — `DESIGN.md`, `code.html`, image de référence
 
 ---
+
+---
+
+## Annexe du 2026-09-27 — pourquoi la recherche était vide
+
+La recherche affichait « AUCUN PRESTATAIRE TROUVE » alors qu'une fiche agent
+existait en base, et que sa création comme sa modification fonctionnaient.
+
+### La cause : une politique, pas une donnée
+
+`20260925000300` définissait, pour la lecture de `agent_profiles` :
+
+```sql
+create policy "Agents can view own or company-linked profile"
+  on public.agent_profiles for select
+  using (profile_id = (select auth.uid()) or private.is_admin());
+```
+
+Lisible par l'agent lui-même, ou un administrateur. **Pas par un client.**
+
+La recherche d'un client ne pouvait donc rien renvoyer, quel que soit le nombre
+de fiches : la liste n'était pas vide par accident, elle ne pouvait pas ne pas
+l'être. C'est un défaut de conception de la politique, héritée telle quelle du
+modèle de missions — où la visibilité par les participants est une contrainte du
+modèle. Pour un catalogue de prestataires, elle n'a pas lieu d'être.
+
+### Pourquoi rien ne l'avait vu
+
+- `check:supabase` ne teste que le rôle `anon`. Or une politique qui ferme au
+  client ferme **aussi** à `anon` : les deux cas sont indiscernables depuis
+  l'extérieur.
+- Aucune ligne de `VERIFICATION_RAPIDE.sql` ne portait sur la visibilité des
+  prestataires.
+- La création de fiche fonctionnait : elle écrivait la ligne. Rien n'indiquait
+  que cette ligne était ensuite illisible.
+
+C'est la **4ᵉ fois** qu'une absence de contrôle laisse passer un défaut :
+
+| Défaut | Pourquoi aucun contrôle ne le voyait |
+|---|---|
+| `mission_assignments` sans politique `insert` | le contrôle 12 le voyait, le bilan non |
+| `DEFAULT auth.uid()` de `01400` | le contrôle 18 mesurait sa présence, pas son moment d'évaluation |
+| `grant select` absent sur `agent_profiles` | le contrôle ne demandait que les `INSERT` |
+| politique de lecture ci-dessus | **aucun contrôle n'existait** |
+
+> **L'absence de contrôle ne prouve rien.** Elle ne prouve surtout pas l'absence
+> de défaut.
+
+### Le correctif
+
+`20260926001900_searchable_agent_profiles.sql` ajoute `registered` et
+`validated` aux conditions de lecture. Un profil `rejected` n'est pas exposé.
+Aucune donnée n'est touchée, et les politiques d'écriture sont inchangées : un
+agent ne peut toujours créer que sa fiche, et la modifier que la sienne.
+
+**Choix assumé :** rendre `registered` visible. On pourrait exiger
+`validated`, et ce serait défendable — mais alors la création de fiche n'a
+**aucun effet observable** tant qu'un administrateur n'intervient pas, et
+l'écran « Ma fiche professionnelle » paraîtrait sans effet. Visibilité et
+validation sont deux choses distinctes ; la seconde reste un acte
+d'administration, avec l'écran correspondant.
+
+### Ce que la recherche ne prouve toujours pas
+
+Que le parcours de **réservation** fonctionne. L'affectation — choisir un agent
+pour une mission publiée — n'a pas encore été testée de bout en bout.

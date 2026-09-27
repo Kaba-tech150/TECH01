@@ -332,6 +332,77 @@ const checkFonctionInterdite = async (fn) => {
   }
 };
 
+/**
+ * Verifie que CHAQUE table de metier est lisible par un client authentifie.
+ *
+ * CE CONTROLE EXISTE PARCE QUE LE 2026-09-27, IL N'Y AVAIT AUCUN.
+ *
+ * `agent_profiles` n'avait, pour la lecture, que cette politique :
+ *
+ *   using (profile_id = (select auth.uid()) or private.is_admin())
+ *
+ * Lisible par l'agent lui-meme, ou un administrateur. **Pas par un client.** La
+ * recherche d'un client ne pouvait donc RIEN renvoyer, pour aucun nombre de
+ * fiches : la liste etait vide par construction, et non par accident.
+ *
+ * Le parcours « creer ma fiche » semblait fonctionner — il fonctionnait, en
+ * ecrivant la ligne — et `check:supabase` annonçait « conforme ». Aucun des
+ * deux ne pouvait le voir : le script ne teste que le role `anon`, et une
+ * politique qui refuse un client refuse aussi `anon`.
+ *
+ * C'est la 4e fois qu'une absence de controle laisse passer un defaut :
+ * `mission_assignments` sans politique insert, le `DEFAULT auth.uid()` evalue
+ * au mauvais moment, le `grant select` manquant, puis cette politique.
+ * L'absence de controle ne prouve rien.
+ *
+ * COMMENT CE CONTROLE PEUT ECHOUER SANS JETON
+ *
+ * Il teste le role `anon`, qui n'est PAS un client : les tables fermees au
+ * client restent fermees a `anon`, et le test ne peut pas les distinguer. Il
+ * distingue donc ce qu'il peut, et signale explicitement ce qu'il ne peut pas.
+ * Ce qui compte ici est le CONTRAIRE du test de lecture : on cherche une table
+ * qui, elle, s'ouvre.
+ */
+const checkVisibiliteMetier = async () => {
+  console.log('\n--- Visibilite metier (ce que ce script ne peut PAS prouver) ---');
+
+  // Tables dont la lecture par un client fait partie du produit : la liste
+  // des agents dans la recherche, celle des villes, l'historique des missions.
+  // Une table absente de cette liste n'est pas « validee » : elle n'est pas
+  // testee, et le script le dit.
+  const ATTENDUES_PAR_UN_CLIENT = ['villes', 'missions', 'mission_assignments'];
+
+  for (const table of ATTENDUES_PAR_UN_CLIENT) {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/${table}?select=*&limit=1`,
+      { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+    );
+
+    if (response.status === 200) {
+      // Anormal : ces tables ont toutes une politique de lecture fermee au
+      // public. Un 200 ici signifierait que la table est ouverte.
+      record(table, 'lue par le role anon : politique de lecture absente ou trop large');
+      console.log(`  ALERTE   ${table.padEnd(22)} lue SANS authentification`);
+    } else {
+      console.log(
+        `  OK       ${table.padEnd(22)} fermee au role anon (attendu) - ` +
+          `ce test ne dit RIEN de la visibilite par un client`,
+      );
+    }
+  }
+
+  console.log(
+    '\n  AVERTISSEMENT Ces tests ne disent rien de la visibilite par un CLIENT.\n' +
+      '  Le role anon est refuse presque partout, y compris sur les tables qu un\n' +
+      '  client doit voir. Une politique qui ferme au client ferme aussi a anon,\n' +
+      '  et les deux cas sont indiscernables d ici.\n' +
+      '\n  Le 2026-09-27, agent_profiles etait dans cette categorie : invisible\n' +
+      '  pour un client, invisible pour anon, et « conforme » selon ce script.\n' +
+      '  Le seul test qui le revele est FONCTIONNEL : creer une fiche, puis la\n' +
+      '  chercher depuis un autre compte. Voir RAPPORT_PROJET.md.',
+  );
+};
+
 const run = async () => {
   console.log('--- Authentification de la cle anon ---');
   await checkApiKey();
@@ -351,6 +422,8 @@ const run = async () => {
   for (const fn of FONCTIONS_A_INTERDIRE) {
     await checkFonctionInterdite(fn);
   }
+
+  await checkVisibiliteMetier();
 
   const schemaBlocked = anomalies.some((a) => a.message.includes('schema public'));
 
