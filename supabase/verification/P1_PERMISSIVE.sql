@@ -50,7 +50,6 @@ with politiques(ordre, table_name, commande, politique, caractere) as (
   join pg_class c on c.oid = p.polrelid
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relname = 'missions'
-  order by p.polcmd, p.polname
 
   -- 2. Bilan global : combien de RESTRICTIVE sur tout le schéma public ?
   --    Un seul suffit à fermer une table. On veut le voir nominalement.
