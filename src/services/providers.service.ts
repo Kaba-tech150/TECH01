@@ -15,7 +15,11 @@
  * l'étape « réserver » avant que l'écriture soit fiable.
  */
 import { supabase } from '@/lib/supabase';
-import type { ProviderStatus, TableInsert, TableUpdate } from '@/types';
+import type {
+  AgentProfileInsertableFields,
+  AgentProfileUpdatableFields,
+  ProviderStatus,
+} from '@/types';
 
 /**
  * Un prestataire, vu par un client.
@@ -367,13 +371,13 @@ export const providersService = {
    * valeur que la colonne prend par défaut. Les envoyer produirait un refus
    * dont le message ne dirait pas que le problème est le droit.
    *
-   * LE TYPE EST `TableInsert<'agent_profiles'>`, et non `Record<string, unknown>` :
-   * ce dernier autorise n'importe quelle colonne, y compris celles que la base
-   * refuse. C'est le même principe que `MissionUpdatableFields` : le contrat
-   * TypeScript doit reproduire le `grant`, sinon il laisse passer des écritures
-   * que le serveur rejettera.
+   * LE TYPE EST `AgentProfileInsertableFields`, et non `Record<string,
+   * unknown>` : ce dernier autorise n'importe quelle colonne, y compris celles
+   * que la base refuse. C'est le même principe que `MissionUpdatableFields` : le
+   * contrat TypeScript doit reproduire le `grant`, sinon il laisse passer des
+   * écritures que le serveur rejettera.
    */
-  async createAgentProfile(charge: TableInsert<'agent_profiles'>): Promise<void> {
+  async createAgentProfile(charge: AgentProfileInsertableFields): Promise<void> {
     const { error } = await supabase.from('agent_profiles').insert(charge);
 
     if (error) throw error;
@@ -387,10 +391,17 @@ export const providersService = {
    * `hourly_rate`, `zone`, `bio` et `is_available`. Ni `id`, ni `status`, ni
    * `profile_id` ne sont modifiables : l'identité et l'état d'accréditation
    * restent hors de portée du prestataire.
+   *
+   * `AgentProfileUpdatableFields` est plus étroit que
+   * `TableUpdate<'agent_profiles'>` : il EXCLUT `profile_id`, que le `grant`
+   * n'accorde pas. Le 2026-09-27, ce service acceptait un `TableUpdate` trop
+   * large et l'appelant envoyait `profile_id` — la fiche se créait, puis toute
+   * modification se faisait refuser avec `permission denied for table
+   * agent_profiles`, un message qui désigne la table et tait la colonne.
    */
   async updateAgentProfile(
     agentId: string,
-    charge: TableUpdate<'agent_profiles'>,
+    charge: AgentProfileUpdatableFields,
   ): Promise<void> {
     const { error } = await supabase
       .from('agent_profiles')

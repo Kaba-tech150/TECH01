@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { providersService, type AgentProfile } from '@/services';
-import type { TableInsert, TableUpdate } from '@/types';
+import type { AgentProfileInsertableFields, AgentProfileUpdatableFields } from '@/types';
 
 /** Clé de cache de la fiche agent du compte connecté. */
 export const MA_FICHE_KEY = ['providers', 'moi', 'agent'] as const;
@@ -20,10 +20,16 @@ export function useMaFicheAgent(userId: string | undefined) {
   });
 }
 
+/**
+ * Les deux charges utiles viennent de `prestataireSchema`, qui est leur source
+ * UNIQUE. Les déclarer ici aussi aurait permis qu'elles divergent — et c'est
+ * précisément la duplication qui avait produit le bug : deux listes de
+ * colonnes, dont une fausse.
+ */
 type Variables = {
   userId: string;
   fiche: AgentProfile | null;
-  charge: TableInsert<'agent_profiles'> | TableUpdate<'agent_profiles'>;
+  charge: AgentProfileInsertableFields | AgentProfileUpdatableFields;
 };
 
 /**
@@ -38,9 +44,12 @@ export function useEnregistrerFicheAgent() {
   return useMutation({
     mutationFn: async ({ userId, fiche, charge }: Variables) => {
       if (fiche) {
-        await providersService.updateAgentProfile(fiche.id, charge as TableUpdate<'agent_profiles'>);
+        await providersService.updateAgentProfile(
+          fiche.id,
+          charge as AgentProfileUpdatableFields,
+        );
       } else {
-        await providersService.createAgentProfile(charge as TableInsert<'agent_profiles'>);
+        await providersService.createAgentProfile(charge as AgentProfileInsertableFields);
       }
       return userId;
     },

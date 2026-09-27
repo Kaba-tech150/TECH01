@@ -8,6 +8,7 @@ export { MA_FICHE_KEY, useEnregistrerFicheAgent, useMaFicheAgent } from './useMa
 export {
   AGENT_PROFILE_DEFAULTS,
   agentProfileSchema,
-  versChargeAgent,
+  versChargeCreation,
+  versChargeMiseAJour,
   type AgentProfileValues,
 } from './prestataireSchema';

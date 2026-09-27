@@ -70,4 +70,53 @@ export type MissionUpdatableFields = Pick<
   | 'special_requirements'
 >;
 
+/**
+ * Colonnes qu'un agent est autorisé à INSÉRER sur sa fiche.
+ *
+ * CONTREPARTIE EXACTE du `grant insert` de `20260925000300_rls_policies.sql` :
+ *
+ *   grant insert (profile_id, certification_number, certification_expiry,
+ *                 hourly_rate, zone, bio) on table public.agent_profiles ...
+ *
+ * `profile_id` EST ici. Il ne l'est PAS dans le type d'UPDATE ci-dessous, et
+ * c'est tout l'objet de cette paire.
+ */
+export type AgentProfileInsertableFields = Pick<
+  TableInsert<'agent_profiles'>,
+  'profile_id' | 'certification_number' | 'hourly_rate' | 'zone' | 'bio'
+>;
+
+/**
+ * Colonnes qu'un agent est autorisé à MODIFIER sur sa fiche.
+ *
+ * CONTREPARTIE EXACTE du `grant update` de `20260925000300_rls_policies.sql` :
+ *
+ *   grant update (certification_number, certification_expiry, hourly_rate,
+ *                 zone, bio, is_available) on table public.agent_profiles ...
+ *
+ * `profile_id` N'EST PAS ICI, et son absence est volontaire : le `grant` ne
+ * l'accorde pas, et la politique « Agents can update own profile details »
+ * refuse qu'un agent change le titulaire de sa fiche. Il n'y a qu'une seule
+ * fiche par compte — son identité n'a pas à bouger.
+ *
+ * BUG RÉEL DU 2026-09-27, À NE PAS REPRODUIRE
+ *
+ * Une fonction unique renvoyait la même charge utile pour les deux cas,
+ * `profile_id` compris. La CRÉATION passait ; toute MODIFICATION renvoyait
+ *
+ *   permission denied for table agent_profiles
+ *
+ * Le message ne nomme pas la colonne fautive, il dit seulement « table » — et
+ * le `SELECT` répondait 200. On a donc cherché un problème de DROIT pendant une
+ * demi-journée, alors que la lecture était parfaite et que le défaut était dans
+ * la charge utile. `TableUpdate<'agent_profiles'>` avait laissé passer la
+ * colonne parce qu'il reproduit le schéma complet, pas le `grant`.
+ *
+ * Toute évolution du `grant` doit être répercutée ici, dans les deux sens.
+ */
+export type AgentProfileUpdatableFields = Pick<
+  TableUpdate<'agent_profiles'>,
+  'certification_number' | 'hourly_rate' | 'zone' | 'bio'
+>;
+
 export type { Json };
