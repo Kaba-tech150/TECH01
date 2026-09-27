@@ -149,8 +149,6 @@ grant execute on function private.liste_agents_publics(text) to authenticated;
 -- porte ici aussi, puisqu'il interroge `private`, inaccessible à l'appelant.
 -- Il rend exactement les mêmes colonnes — le nom, et rien d'autre.
 -- ---------------------------------------------------------------------------
-revoke all on function public.liste_agents_publics(text) from public;
-revoke all on function public.liste_agents_publics(text) from anon;
 
 create or replace function public.liste_agents_publics(p_texte text)
 returns table (
@@ -171,6 +169,25 @@ set search_path = ''
 as $fn$
   select * from private.liste_agents_publics(p_texte);
 $fn$;
+
+-- Les retraits viennent APRÈS la création, et non avant.
+--
+-- BUG CORRIGÉ LE 2026-09-27, dans ce fichier même. La première version plaçait
+-- les `revoke` AVANT le `create`, par réflexe de prudence. C'est impossible :
+-- PostgreSQL n'a pas de `IF EXISTS` pour un `revoke` sur fonction, et
+-- `REVOKE ... ON FUNCTION` sur une fonction INEXISTANTE échoue avec
+--
+--   ERROR: 42883: function public.liste_agents_publics(text) does not exist
+--
+-- La migration s'arrêtait donc à la première exécution — sur un échec qui n'a
+-- rien à voir avec la fonction qu'elle cherchait à créer.
+--
+-- L'ordre correct est celui de la fonction `private` juste au-dessus, et il
+-- est suffisant : `create or replace` CONSERVE les droits existants, donc un
+-- retrait placé après agit sur la fonction nouvellement créée comme sur une
+-- fonction qui préexistait. Les deux cas sont couverts.
+revoke all on function public.liste_agents_publics(text) from public;
+revoke all on function public.liste_agents_publics(text) from anon;
 
 grant execute on function public.liste_agents_publics(text) to authenticated;
 
