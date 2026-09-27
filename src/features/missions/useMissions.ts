@@ -44,35 +44,88 @@ export function useClientMissions() {
  * transforme les erreurs en objets, ce qui est précisément l'information qu'on
  * cherche à récupérer.
  */
-async function diagnostiquerReseau(accessToken: string): Promise<void> {
+async function diagnostiquerReseau(accessToken: string, uid: string): Promise<void> {
   const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
   const apikey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   if (!base || !apikey) return;
 
-  const cibles = [
+  const entetes = {
+    apikey,
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  /* Lecture : sert de témoin. Si elle répond 200, le jeton est bon et la RLS
+     de lecture laisse passer l'utilisateur. */
+  for (const cible of [
     '/rest/v1/profiles?select=*&limit=1',
     '/rest/v1/missions?select=*&limit=1',
-  ];
-
-  for (const cible of cibles) {
+  ]) {
     try {
-      const reponse = await fetch(base + cible, {
-        headers: {
-          apikey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const reponse = await fetch(base + cible, { headers: entetes });
       const corps = await reponse.text();
       console.warn(
-        `[SecuGuard][diag] ${cible.split('?')[0]} -> ${reponse.status} ` +
-          `| corps=${corps.slice(0, 260)}`,
+        `[SecuGuard][diag] GET ${cible.split('?')[0]} -> ${reponse.status} ` +
+          `| corps=${corps.slice(0, 200)}`,
       );
     } catch (erreur) {
       console.warn(
-        `[SecuGuard][diag] ${cible.split('?')[0]} -> erreur reseau ` +
+        `[SecuGuard][diag] GET ${cible.split('?')[0]} -> erreur ` +
           `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
       );
     }
+  }
+
+  /*
+   * ÉCRITURE : la même charge utile que `useCreateMission`, par `fetch` brut,
+   * en reproduisant EXACTEMENT ce que fait le client Supabase
+   * (`.insert().select().single()` => `Prefer: return=representation`).
+   *
+   * Si elle réussit, le défaut est dans le client Supabase ou dans l'ordre des
+   * colonnes. Si elle échoue, le corps de la réponse nomme la cause, et le
+   * message n'est plus détourné par une couche d'abstraction.
+   *
+   * La ligne créée est SUPPRIMÉE juste après, et c'est explicite dans le
+   * journal : une ligne de test laissée en base fausserait la prochaine
+   * vérification, et « missions?select=* -> [] » est la preuve qu'il n'y en a
+   * aucune aujourd'hui.
+   */
+  const test = {
+    client_id: uid,
+    title: 'DIAG_PROBE',
+    address: 'DIAG_PROBE',
+    city: 'Paris',
+    start_time: new Date(Date.now() + 3600_000).toISOString(),
+    end_time: new Date(Date.now() + 7200_000).toISOString(),
+    agent_count: 1,
+  };
+
+  try {
+    const insertion = await fetch(`${base}/rest/v1/missions?select=*`, {
+      method: 'POST',
+      headers: {
+        ...entetes,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(test),
+    });
+    const corpsInsertion = await insertion.text();
+    console.warn(
+      `[SecuGuard][diag] POST missions -> ${insertion.status} ` +
+        `| corps=${corpsInsertion.slice(0, 400)}`,
+    );
+
+    // Nettoyage systématique : ce que la sonde a créé, elle le détruit.
+    await fetch(`${base}/rest/v1/missions?title=eq.DIAG_PROBE`, {
+      method: 'DELETE',
+      headers: entetes,
+    });
+    console.warn('[SecuGuard][diag] ligne de test supprimee');
+  } catch (erreur) {
+    console.warn(
+      `[SecuGuard][diag] POST missions -> erreur ` +
+        `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+    );
   }
 }
 
@@ -184,7 +237,7 @@ export function useCreateMission() {
       const { data: donneesSession } = await supabase.auth.getSession();
       const jeton = donneesSession.session?.access_token;
       if (jeton) {
-        await diagnostiquerReseau(jeton);
+        await diagnostiquerReseau(jeton, data.user.id);
       }
 
       console.warn(
