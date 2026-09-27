@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { useAuthContext } from '@/context/AuthContext';
 import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
 import { missionsService } from '@/services';
 import type { CreateMissionInput } from './missionSchema';
@@ -30,34 +31,55 @@ export function useClientMissions() {
 /**
  * Création d'une mission.
  *
- * `client_id` est imposé ici à partir de la session, et non repris du
- * formulaire. C'est le point de sécurité du flux : même si le client
- * envoyait un autre identifiant, la politique RLS
- * « Clients can create draft missions » refuse l'insertion, et l'utilisateur
- * ne pourrait pas créer de mission au nom d'autrui.
+ * `client_id` EST ENVOYÉ — et c'est volontaire, après un long détour.
+ *
+ * HISTORIQUE, à lire avant de « simplifier » ceci
+ *
+ * Deux essais ont échoué, et le second est instructif :
+ *
+ * 1. La version initiale n'envoyait pas `client_id` et la politique
+ *    « Clients can create draft missions » refusait la ligne — alors que
+ *    toutes les conditions de la clause WITH CHECK étaient vérifiées vraies.
+ *
+ * 2. La migration `20260926001400` a posé `default auth.uid()` et a retiré le
+ *    droit d'écrire la colonne. L'idée était bonne : faire écrire l'identité
+ *    par le serveur. **Ça n'a pas fonctionné.** Un `DEFAULT` est une
+ *    expression évaluée quand PostgreSQL *prépare* l'instruction, donc dans le
+ *    rôle *preparer* de PostgREST, où le jeton n'est pas encore installé :
+ *    `auth.uid()` renvoyait `NULL`, et la politique comparait `client_id` à
+ *    `NULL`. Refus, avec un message qui ne nomme aucune des deux raisons.
+ *
+ * Le correctif retenu (`20260926001600`) renverse l'approche : la colonne est à
+ * nouveau remplie par le client, et un trigger `BEFORE INSERT` en
+ * `SECURITY DEFINER` **écrase** la valeur par `auth.uid()`.
+ *
+ * CONSÉQUENCE PRATIQUE : le trigger s'exécute au moment où le jeton EST
+ * disponible. C'est la seule fenêtre fiable.
+ *
+ * Et la valeur envoyée ici n'a AUCUNE importance : le trigger l'écrase. Le
+ * client peut envoyer n'importe quoi, le serveur écrit l'identité. La
+ * garantie tient à l'écriture inconditionnelle du trigger, pas à la
+ * comparaisonaison d'une politique.
+ *
+ * La session reste donc la source : `user.id`, jamais une valeur du formulaire.
  */
 export function useCreateMission() {
   const queryClient = useQueryClient();
+  const { user } = useAuthContext();
 
   return useMutation({
     mutationFn: async (input: CreateMissionInput) => {
       /*
-       * `client_id` N'EST PAS ENVOYÉ.
-       *
-       * La colonne porte désormais la valeur par défaut `(select auth.uid())`,
-       * posée par la migration `20260926001400_mission_client_id_default.sql` :
-       * le serveur l'écrit à partir du jeton, et le rôle `authenticated` n'a
-       * plus le droit d'écrire cette colonne.
-       *
-       * C'est une inversion de responsabilité délibérée. L'application
-       * envoyait l'identifiant, et la RLS devait vérifier qu'il était correct
-       * — ce qui bloquait la création d'une mission. Une donnée d'identité ne
-       * doit pas être fournie par le client alors qu'elle est disponible, et
-       * plus fiable, dans le jeton. Le rôle `authenticated` peut donc créer une
-       * mission pour lui-même, et pour personne d'autre : c'est désormais
-       * garanti par l'absence de droit, pas seulement par la politique.
+       * Sans session, l'insertion n'a aucune chance : le trigger refuserait
+       * l'écriture faute de jeton. Mieux vaut un message clair ici qu'un
+       * « vos droits ne permettent pas cette opération » trompeur.
        */
+      if (!user) {
+        throw new Error('Session absente : reconnectez-vous pour créer une mission.');
+      }
+
       return missionsService.createMission({
+        client_id: user.id,
         title: input.title,
         description: input.description,
         address: input.address,

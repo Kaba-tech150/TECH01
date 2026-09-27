@@ -73,6 +73,18 @@ with expected(polname) as (
 select
   c.relname as table_name,
   p.polcmd as commande,
+  -- `polcmd` ne contient PAS les lettres du SQL : 'a' signifie INSERT, pas 'i'.
+  -- Sans cette traduction, un lecteur cherche une politique absente parce
+  -- qu'il n'a pas vu les trois caracteres attendus — ce qui est exactement
+  -- l'erreur commise le 2026-09-27.
+  case p.polcmd
+    when '*' then 'TOUTES'
+    when 'r' then 'SELECT'
+    when 'a' then 'INSERT'
+    when 'w' then 'UPDATE'
+    when 'd' then 'DELETE'
+    else p.polcmd
+  end as commande_lisible,
   p.polname as politique,
   case
     when p.polname in (select polname from expected) then 'ATTENDUE'

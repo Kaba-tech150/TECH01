@@ -175,12 +175,33 @@ with checks(controle, valeur, statut) as (
            then 'OK' else 'ALERTE' end
 
   -- 12. Politique d insertion des affectations, ajoutee par la migration 00600
+  --     puis restauree par 20260926001200.
+  --
+  -- ⚠️ ATTENTION — LECTURE DE `polcmd`
+  --
+  -- Les valeurs de `pg_policy.polcmd` ne sont PAS les lettres du SQL.
+  -- `insert` vaut **'a'** (comme « append »), et non 'i' :
+  --
+  --   *  = ALL      r = SELECT     a = INSERT
+  --   w  = UPDATE   d = DELETE
+  --
+  -- Ce controle a longtemps cherche `polcmd = 'i'`, une valeur qui N'EXISTE
+  -- PAS dans PostgreSQL. Il comptait donc toujours zero, et annoncait
+  -- systematiquement « ALERTE » — y compris lorsque la politique etait
+  -- parfaitement installee.
+  --
+  -- C'est un faux positif, et il a oriente le diagnostic pendant des jours vers
+  -- une politique absente alors que la question n'etait pas posee. La preuve
+  -- qu'elle existe : la migration 01200, rejouee le 2026-09-27, a echoue sur
+  -- SON PROPRE controle en renvoyant « a,r,w » — c'est-a-dire exactement
+  -- « insertion, selection, mise a jour » presentes. L'alerte venait du
+  -- separateur du test, pas de l'etat de la base.
   union all
   select '12. Politique insert mission_assignments',
          (select count(*)::text from pg_policy
-           where polrelid = 'public.mission_assignments'::regclass and polcmd = 'i'),
+           where polrelid = 'public.mission_assignments'::regclass and polcmd = 'a'),
          case when (select count(*) from pg_policy
-           where polrelid = 'public.mission_assignments'::regclass and polcmd = 'i') = 1
+           where polrelid = 'public.mission_assignments'::regclass and polcmd = 'a') = 1
            then 'OK' else 'ALERTE' end
 
   -- 13. anon ne doit avoir aucun droit d ecriture

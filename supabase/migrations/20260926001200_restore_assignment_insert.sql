@@ -142,15 +142,29 @@ do $$
 declare
   commandes text;
 begin
+  -- `polcmd` ne contient PAS les lettres du SQL. Les valeurs reelles de
+  -- PostgreSQL sont :
+  --     * = ALL     r = SELECT     a = INSERT     w = UPDATE     d = DELETE
+  --
+  -- INSERT vaut donc **'a'** (pour « append »), et NON 'i'. Une valeur 'i'
+  -- n'existe pas : la chercher revient a trouver zero, toujours.
+  --
+  -- C'est exactement ce qui a fait echouer cette migration le 2026-09-27 alors
+  -- que la politique venait d'etre creee correctement. Le message affichait
+  -- « a,r,w » — c'est-a-dire bien les trois commandes attendues — et le test
+  -- les jugeait nevertheless incorrectes parce qu'il attendait « i,r,w ».
+  --
+  -- Un test qui echoue sur un etat correct est pire qu'un test absent : il
+  -- envoie vers un diagnostic qui n'existe pas.
   select string_agg(polcmd, ',' order by polcmd)
     into commandes
     from pg_policy
    where polrelid = 'public.mission_assignments'::regclass
-     and polcmd in ('r', 'a', 'w', 'i');
+     and polcmd in ('r', 'a', 'w');
 
-  if commandes is distinct from 'i,r,w' then
+  if commandes is distinct from 'a,r,w' then
     raise exception
-      'ECHEC restore_assignment_insert : commandes RLS trouvees sur mission_assignments = %, attendu i,r,w',
+      'ECHEC restore_assignment_insert : commandes RLS trouvees sur mission_assignments = %, attendu a,r,w',
       coalesce(commandes, 'aucune');
   end if;
 end;
