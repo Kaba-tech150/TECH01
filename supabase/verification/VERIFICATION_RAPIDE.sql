@@ -376,7 +376,12 @@ with checks(controle, valeur, statut) as (
   -- trigger sans la suppression du DEFAULT laisserait les deux mecanismes
   -- cohabiter, et 01600 echouerait sur ce point precis.
   union all
-  select '18. missions.client_id : trigger actif, DEFAULT absent',
+  -- Les guillemets doubles ci-dessous sont VOLONTAIRES : ces deux libelles
+  -- contiennent une apostrophe, donc ils ne peuvent pas etre ecrits avec les
+  -- simples du reste du fichier. Un libelle casse fait echouer tout le script,
+  -- et l'affichage s'arrete sur la ligne 18, en laissant 1 a 17 sans statut.
+  --
+  select "18. missions.client_id : trigger actif, DEFAULT absent",
          (select case
                   when exists (select 1 from pg_trigger t
                                 where t.tgrelid = 'public.missions'::regclass
@@ -421,7 +426,7 @@ with checks(controle, valeur, statut) as (
   -- alors que l'appelant n'a pas reellement le droit de la choisir. Une fonction
   -- ordinaire ne fonctionnerait pas ici.
   union all
-  select '19. missions.client_id : valeur imposee (droit + trigger)',
+  select "19. missions.client_id : valeur imposee (droit + trigger)",
          (select case
                   when exists (select 1 from information_schema.column_privileges
                                 where table_schema = 'public'
