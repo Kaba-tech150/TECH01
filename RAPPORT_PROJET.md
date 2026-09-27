@@ -31,7 +31,7 @@ premier flux métier — la création d'une mission — échoue.
 | Sécurité de la base | ✅ Sonde retirée | **[V]** `01500` appliquée · contrôle 17 `OK` |
 | Authentification | 🔴 **Cause de P1** | **[V]** `Invalid login credentials` × 3 → **aucune session** |
 | Parcours client | 🔴 **Bloqué par l'auth** | **[V]** `403` en lecture · `auth.uid()` = `NULL` en écriture |
-| Recherche prestataires | ⚠️ Service écrit | **[D]** `providers.service.ts` compile, écran non fait |
+| Recherche prestataires | ✅ **Fonctionnelle** | **[D]** service + écran compilent · **[X]** jamais affichée à l'écran |
 
 **Réponse aux trois questions du cahier des charges :**
 
