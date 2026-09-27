@@ -69,30 +69,17 @@ export function useCreateMission() {
   return useMutation({
     mutationFn: async (input: CreateMissionInput) => {
       /*
-       * LECTURE DE LA SESSION, PAS DU CONTEXTE — c'est le point de ce garde-fou.
+       * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
        *
-       * Incident du 2026-09-27 : trois échecs de connexion
-       * (`Invalid login credentials`) suivis d'une tentative de création, qui
-       * a échoué sur « new row violates row-level security policy ». Trois
-       * messages, un seul défaut : AUCUNE session. Le jeton n'était pas envoyé,
-       * donc `auth.uid()` valait `NULL` côté base, donc
-       * `client_id = auth.uid()` était faux, donc la politique refusait la
-       * ligne.
+       * Affiche la charge utile réellement envoyée. L'incident en cours
+       * (violation RLS alors que neuf contrôles base sont au vert) ne peut
+       * venir que d'ici : soit `client_id` n'est pas transmis et la colonne,
+       * devoidue de DEFAULT par 01600, vaut NULL ; soit il est transmis et le
+       * trigger ne s'exécute pas.
        *
-       * Le message affiché — « vos droits ne permettent pas cette opération »
-       * — envoyait vers les permissions. C'était le diagnostic exact inverse
-       * du réel. Neuf contrôles base sont alors tous au vert : la base était
-       * saine, et elle l'est toujours.
-       *
-       * `user` du contexte React n'est PAS une source fiable ici : il décrit
-       * l'état au dernier rendu. Après un échec de connexion, il peut être
-       * `null` — ou pire, encore peuplé de la session PRÉCÉDENTE, et
-       * l'interface paraît connectée alors qu'aucun jeton ne part. On
-       * interroge donc la source de vérité.
-       *
-       * `getSession()` est une lecture LOCALE : elle renvoie la session en
-       * cours sans requête réseau, et elle suffit à savoir si un jeton
-       * existe.
+       * Ces deux cas produisent EXACTEMENT le même message serveur, et les
+       * distinguer demandait jusqu'ici un aller-retour en SQL Editor.
+       * Journaliser la charge utile coûte une ligne et tranche immédiatement.
        */
       const { data } = await supabase.auth.getSession();
       const session = data.session;
@@ -103,7 +90,7 @@ export function useCreateMission() {
         );
       }
 
-      return missionsService.createMission({
+      const charge = {
         client_id: session.user.id,
         title: input.title,
         description: input.description,
@@ -115,7 +102,14 @@ export function useCreateMission() {
         agent_count: input.agentCount,
         budget: input.budget,
         special_requirements: input.specialRequirements,
-      });
+      };
+
+      console.warn(
+        `[SecuGuard][diag] mission — uid=${session.user.id} ` +
+          `colonnes=${Object.keys(charge).sort().join(',')}`,
+      );
+
+      return missionsService.createMission(charge);
     },
     onSuccess: () => {
       // La liste est réinvalidée, pas rechargée à la main : l'écran affiche
