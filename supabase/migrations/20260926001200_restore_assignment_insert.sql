@@ -16,9 +16,10 @@
 --
 --   2. La politique d'insertion, elle, a disparu.
 --
---   3. La chaîne de migrations définit 38 politiques au total : 32 en 00300,
---      1 en 00600, 1 en 00700, 4 en 01100. La base en compte 37 (contrôle 4).
---      Il manque donc exactement une politique : celle de 00600.
+--   3. La chaîne de migrations définit 37 politiques au total : 32 en 00300,
+--      1 en 00600, 0 en 00700 — son `create policy` est dans un commentaire —
+--      4 en 01100, et ce fichier qui remplace celle de 00600 au même nom.
+--      La base en compte 37 (contrôle 4).
 --
 -- POURQUOI LA FONCTION A SURVÉCU ET LA POLITIQUE NON
 --
@@ -57,7 +58,7 @@
 --
 -- Après exécution, relancer supabase/verification/VERIFICATION_RAPIDE.sql :
 -- le contrôle 12 doit passer de ALERTE à OK, et le contrôle 4 doit annoncer
--- 38 politiques. Ce fichier échoue lui-même si son effet est incomplet.
+-- 37 politiques. Ce fichier échoue lui-même si son effet est incomplet.
 
 begin;
 

@@ -2,8 +2,22 @@
 -- LISTE DES POLITIQUES RLS — SECU GUARD
 -- =============================================================================
 -- Pourquoi ce fichier : le contrôle 4 de VERIFICATION_RAPIDE.sql annonce
--- 38 politiques, alors que le projet n'en définit que 33 (32 dans la
--- migration 20260925000300 + 1 dans 20260925000600).
+-- 37 politiques, chiffre vérifié sur les fichiers eux-mêmes :
+--
+--   20260925000300  32
+--   20260925000600   1   "Mission owners can create assignments"
+--   20260925000700   0   son `create policy` est dans un commentaire
+--   20260925001100   4
+--   20260926001200   1   même nom que 00600 : il la remplace
+--                   ---
+--                    37
+--
+-- Les deux erreurs qui produisaient 38 : `00700` ne crée aucune politique —
+-- sa ligne 35 la CITE dans un commentaire pour expliquer un échec — et
+-- `00600`/`01200` créent la même politique au même nom, donc ne s'ajoutent pas.
+--
+-- Ce fichier sert à l'autre moitié du travail : NOMMER les politiques, pour
+-- les comparer à celles du projet.
 --
 -- L'écart s'explique ainsi : les tables `profiles` et `missions` existaient
 -- AVANT la migration 20260925000100 et portaient déjà des politiques RLS.
@@ -12,7 +26,8 @@
 -- noms différents, ont donc SURVÉCU.
 --
 -- Une politique héritée peut être plus permissive que celles du projet et
--- laisser fuiter des données. Il faut donc les identifier nommément.
+-- laisser fuiter des données. C'est pourquoi il faut les identifier nommément,
+-- et pas seulement les compter.
 --
 -- UTILISATION : SQL Editor > coller ce fichier ENTIER > Run.
 -- Lecture seule : uniquement des SELECT.

@@ -187,11 +187,23 @@ outil destructif hors chaîne.
 | `20260925000900` | convergence du schéma (182 l.) | **[D]** devenu sans objet après reconstruction |
 | `20260925001000` | restauration de 14 clés étrangères | **[D]** devenu sans objet |
 | `20260925001100` | table `villes` + 8 villes d'exemple | **[V]** oui |
-| `20260926001200` | **restauration de l'insertion des affectations** | ❌ **écrit, non appliqué** |
+| `20260926001200` | **restauration de l'insertion des affectations** | **[V]** **appliquée le 2026-09-27** — contrôles 11 et 12 à `OK` |
 | `20260926001300` | sonde de diagnostic RLS | **[V]** **appliquée le 2026-09-27** |
-| `20260926001400` | `missions.client_id` dérivé du jeton (correctif P1) | **[X]** **état inconnu** |
+| `20260926001400` | `missions.client_id` par `DEFAULT` | **[D] REMPLACÉE par `01600`** — le `DEFAULT` s'évalue avant l'installation du jeton |
 | `20260926001500` | **retrait de la sonde de diagnostic** | **[V]** **appliquée le 2026-09-27** |
+| `20260926001600` | **identité imposée par trigger `BEFORE INSERT`** | **[V]** **appliquée le 2026-09-27** — contrôles 18 et 19 à `OK` |
+| `20260926001800` | **restauration des droits de lecture des prestataires** | **[V]** **appliquée le 2026-09-27** — `agent_profiles_avec_profil = 200` |
 | `000001` | remise à zéro totale (destructif) | outil manuel — **ne plus jamais le rejouer** |
+
+> **Statut de `01600`, établi par exécution et non par supposition.** La
+> migration échoue elle-même si le `DEFAULT` de `client_id` subsiste **ou** si
+> le droit `INSERT` sur cette colonne manque. La base présente les deux
+> contraire — aucun `DEFAULT`, un droit `INSERT` — ce qui est précisément la
+> signature de `01600`. Les contrôles 18 et 19 mesurent désormais cette
+> réalité au lieu de celle, abandonnée, de `01400`.
+>
+> **Ce que `01600` ne prouve pas :** que l'insertion fonctionne. Elle garantit
+> que le mécanisme est en place ; seul un test fonctionnel le démontre.
 
 > ⚠️ **Correction du 2026-09-27.** Les versions précédentes de ce tableau
 > affirmaient que `01300` n'avait pas été appliquée. **C'était faux**, et
@@ -677,16 +689,22 @@ schéma**. Quatre règles en découlent, et elles sont appliquées dans ce rappo
 `01200` est la seule migration restante. Les migrations s'appliquent dans le SQL
 Editor, pas depuis l'éditeur.
 
-**A1. Rejouer `VERIFICATION_RAPIDE.sql`** — il gagne 3 contrôles (17, 18, 19).
-Le **18** dit si le correctif de P1 (`01400`) est appliqué. Le **19** dit si le
-droit d'écriture a bien été retiré. **C'est la première fois qu'on peut le
-savoir** : aucun contrôle ne regardait `missions.client_id`.
+**A1. Rejouer `VERIFICATION_RAPIDE.sql`.** Les contrôles **18** et **19** disent
+si le correctif de P1 (`01600`) est en place : trigger `BEFORE INSERT` actif,
+`DEFAULT` absent, et la paire *droit INSERT + trigger `SECURITY DEFINER`* en
+place. Ils mesuraient auparavant le design de `01400`, **abandonné** : ils
+signalaient donc une alerte sur une base saine.
 
 **A2. Coller `20260926001200_restore_assignment_insert.sql`** → contrôle 12
-passe à `OK`, contrôle 4 annonce **38**.
+passe à `OK`, contrôle 4 annonce **37**.
 
-> Si le contrôle 18 est en `ALERTE`, coller aussi
-> `20260926001400_mission_client_id_default.sql` **avant** de tester.
+> ⚠️ **NE PAS rejouer `20260926001400`.** Elle repose le `DEFAULT` et reprend le
+> `REVOKE`, ce qui ferait échouer de nouveau l'insertion. `01600` l'interdit
+> explicitement, et son auto-vérification échouerait si le `DEFAULT` réapparaît.
+
+> **Un contrôle doit être lu autant que la base.** Le compte de 38 politiques
+> était faux : la chaîne en définit **37**. Le seuil est désormais aligné, et le
+> détail du décompte est écrit dans le contrôle lui-même.
 
 **A3. `npm run web` → compte neuf → Créer une mission.**
 
@@ -736,8 +754,14 @@ de `mission_assignments` et les droits au niveau table, tandis que la fonction
 `can_assign_mission` du même fichier survivait — le corps d'une fonction SQL
 n'étant pas une dépendance suivie par PostgreSQL.
 
-**Preuve :** la chaîne définit 38 politiques, la base en compte 37. L'écart est
-exactement cette politique.
+**Preuve :** la politique d'insertion de `mission_assignments` était absente, et
+le contrôle 12 la voyait. Le contrôle 4 annonçait alors 38 alors que la base en
+comptait 37 — l'écart valait exactement cette politique.
+
+> **Correction du décompte, le 2026-09-27.** La chaîne définit **37** politiques,
+> pas 38. Le « 38 » comptait deux fois la même politique (`00600` et `01200` la
+> créent au même nom) et une occurrence de `create policy` située dans un
+> **commentaire** de `00700`. Le seuil du contrôle 4 est aligné sur 37.
 
 **Impact :** `missionsService.createAssignment()` est **structurellement
 inutilisable**. Le parcours d'affectation est mort.

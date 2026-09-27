@@ -288,13 +288,23 @@ export interface Database {
         Insert: {
           id?: string;
           /**
-           * Facultatif : la base applique la valeur par défaut
-           * `(select auth.uid())`, posée par la migration
-           * `20260926001400_mission_client_id_default.sql`.
+           * À FOURNIR, et sa valeur est sans importance.
            *
-           * Le rôle `authenticated` n'a plus le droit d'écrire cette colonne
-           * (`revoke insert (client_id)`) : la fournir ferait échouer
-           * l'insertion. L'identité du client vient donc exclusivement du jeton.
+           * `20260926001400` avait posé un `DEFAULT auth.uid()` et retiré le
+           * droit d'écrire la colonne. **Ça n'a jamais fonctionné** : un
+           * `DEFAULT` n'est pas de la donnée, PostgreSQL l'évalue en
+           * préparant l'instruction — donc via PostgREST, dans le contexte du
+           * rôle *preparer*, **avant** que le jeton ne soit installé. `auth.uid()`
+           * y renvoyait `NULL`, la politique refusait la ligne, et le message ne
+           * nommait aucune des deux raisons.
+           *
+           * `20260926001600` renverse l'approche : la colonne est à nouveau
+           * remplie par l'application, et un trigger `BEFORE INSERT` en
+           * `SECURITY DEFINER` **écrase** la valeur par `auth.uid()`.
+           *
+           * Le client peut donc envoyer n'importe quel `client_id` : il sera
+           * ignoré. La garantie ne repose ni sur une comparaison, ni sur
+           * l'absence d'un droit, mais sur une écriture inconditionnelle.
            */
           client_id?: string;
           title: string;

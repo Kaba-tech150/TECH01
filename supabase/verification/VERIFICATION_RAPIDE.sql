@@ -55,22 +55,48 @@ with checks(controle, valeur, statut) as (
   -- ATTENTION A LA LECTURE DU RESULTAT
   --
   -- Ce controle a longtemps annonce « 33 attendues » avec un seuil `>= 33`. Ce
-  -- seuil etait trop lax : il laissait passer un ECART sans le dire. La chaine
-  -- definit 38 politiques (32 en 00300, 1 en 00600, 1 en 00700, 4 en 01100) ;
-  -- la base en comptait 37, et le controle affichait « OK » malgre tout.
+  -- seuil etait trop lax : il laissait passer un ECART sans le dire.
+  --
+  -- Un seuil trop lax produit un faux VERT. Un compte ERRONE produit un faux
+  -- ALERTE : c'est ce qu'ont fait les controles 18 et 19, qui mesuraient un
+  -- design remplace sans jamais le dire. Un controle doit etre lu autant que la
+  -- base : la base peut etre saine et le controle, faux.
   --
   -- L'ecart valait exactement la politique d'insertion de `mission_assignments`,
   -- celle que le `DROP TABLE ... CASCADE` de 000001_reset_all.sql avait
   -- emportee. Le controle 12 la voyait bien, mais le bilan global, lui,
   -- restait vert : c'est exactement le faux vert que ce fichier doit empecher.
   --
-  -- Le seuil est donc porte a 38, et l'ecart est nomme explicitement.
+  -- COMPTE CORRECT, ETABLI SUR LES FICHIERS ET NON SUR UNE CONVENTION
+  --
+  -- La chaine definit 37 politiques, et non 38. Le detail compte, parce que
+  -- c'est lui qui avait produit le 38 :
+  --
+  --   20260925000300  32
+  --   20260925000600   1   "Mission owners can create assignments"
+  --   20260925000700   0   <-- le `create policy` y est dans un COMMENTAIRE
+  --   20260925001100   4
+  --   20260926001200   1   meme NOM que 00600 : il la REMPLACE, pas ne s'y ajoute
+  --                   ---
+  --                    37
+  --
+  -- Les deux erreurs qui donnaient 38 :
+  --
+  --   1. 00700 ne cree AUCUNE politique : il retire `force row level security`
+  --      de trois tables. Sa ligne 35 est un commentaire qui CITE une politique
+  --      pour expliquer un echec d'inscription ; un compteur de `create policy`
+  --      la prenait pour une creation.
+  --   2. 00600 et 01200 creent la meme politique, au meme nom. Les additionner
+  --      compte deux fois une politique qui n'existe qu'une fois en base.
+  --
+  -- 37 = ce que la base contient reelelement. Le seuil passe donc a 37, et
+  -- l'ecart reste nomme explicitement.
   union all
-  select '4. Politiques RLS (38 attendues)',
+  select '4. Politiques RLS (37 attendues)',
          (select count(*)::text from pg_policy p join pg_class c on c.oid = p.polrelid
            join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public'),
          case when (select count(*) from pg_policy p join pg_class c on c.oid = p.polrelid
-           join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public') >= 38
+           join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public') >= 37
            then 'OK' else 'ALERTE' end
 
   -- 5. Ecriture interdite sur les colonnes sensibles
@@ -294,48 +320,145 @@ with checks(controle, valeur, statut) as (
           where n.nspname = 'public' and p.proname like 'diagnostic%') = 0
            then 'OK' else 'ALERTE' end
 
-  -- 18. missions.client_id porte un DEFAULT derive du jeton.
+  -- 18. `missions.client_id` : identite IMPOSEE par un trigger BEFORE INSERT.
   --
-  -- C'est le CORRECTIF de P1 (migration 20260926001400), et c'est le controle le
-  -- plus important de ce fichier pour le prochain test fonctionnel.
+  -- CES DEUX CONTROLES ONT MESURE UN DESIGN REMPLACE. Ils annoncaient 18 et 19
+  -- sur une base SAINE, et les deux affichaient ALERTE.
   --
-  -- Rappel du defaut encountere : l'insertion d'une mission echouait avec
-  -- « new row violates row-level security policy for table "missions" » alors
-  -- que TOUTES les conditions de la clause WITH CHECK etaient verifiees vraies.
-  -- La base etait saine : le defaut etait dans l'emission de la requete.
+  -- Ils verifiaient la migration 20260926001400 :
   --
-  -- Le correctif inverse la responsabilite : la colonne prend `auth.uid()` comme
-  -- valeur par defaut, et le role `authenticated` perd le droit d'ecrire cette
-  -- colonne. Le serveur ecrit l'identite, le client ne peut plus le forger.
+  --     alter table public.missions
+  --       alter column client_id set default auth.uid();
+  --     revoke insert (client_id) on table public.missions from authenticated;
   --
-  -- SANS CE CONTROLE, rien ne signalait que le correctif etait applique ou non :
-  -- la verification s'arretait au controle 12, qui ne parle pas de `missions`.
+  -- La migration 20260926001600 l'INVERSE, et sa propre auto-verification echoue
+  -- si le DEFAULT existe encore OU si le droit INSERT manque. Les valeurs mesurees
+  -- (aucun default, un droit INSERT) sont donc exactement celles que 0160 produit :
+  -- 01600 EST APPLIQUEE. C'est le controle qui etait faux, pas la base.
+  --
+  -- POURQUOI LE DEFAULT NE POUVAIT PAS MARCHER
+  --
+  -- Un DEFAULT n'est pas de la donnee : PostgreSQL l'evalue en PREPARANT
+  -- l'instruction. Via PostgREST, cette preparation a lieu dans le contexte du
+  -- role *preparer*, AVANT que le jeton de la requete ne soit installe :
+  -- `auth.uid()` y renvoie NULL. `client_id` valait NULL, la clause
+  -- `client_id = auth.uid()` s'evaluait a NULL donc fausse, et la politique
+  -- refusait la ligne -- et les deux tests le disaient, sans qu'aucune des
+  -- conditions de WITH CHECK ne soit fausse.
+  --
+  -- 01600 corrige au bon moment : un trigger BEFORE INSERT s'execute pendant
+  -- l'EXECUTION, donc dans le contexte du role appelant, ou le jeton EST pose.
+  --
+  -- CE QUE CES CONTROLES MESURENT MAINTENANT
+  --
+  -- 18 : le trigger est present, actif, et le DEFAULT a bien disparu.
+  -- 19 : le droit INSERT existe ET le trigger existe. C'est cette paire qui
+  --      constitue la garantie, pas le droit seul.
+  --
+  -- 19 merite une attention particuliere : le droit INSERT sur `client_id` est
+  -- REACCORDE, et c'est voulu. PostgreSQL refuse d'inserer une colonne sans
+  -- droit, meme si un trigger va la reecrire. Le droit est donc la, et la VALEUR
+  -- ne l'est pas : `new.client_id := auth.uid()` l'ecrase inconditionnellement.
+  -- Un client peut envoyer n'importe quel `client_id` ; il sera ignore.
+  --
+  -- C'est la garantie la plus forte du schema : elle ne repose ni sur une
+  -- comparaison, ni sur l'absence d'un droit, mais sur une ECRITURE INCONDITIONNELLE.
+  -- Un controle qui compterait 0 droits ICI — l'ancien controle 19 — afficherait
+  -- ALERTE sur une base mieux protegee qu'avant.
+  --
+  -- Ces deux controles ne disent pas que l'insertion fonctionne : ils disent que
+  -- le mecanisme est en place. La preuve reste un test fonctionnel.
+  --
+  -- 18.
+  --
+  -- `trg_force_mission_client_id` doit exister, etre actif, et le DEFAULT
+  -- `auth.uid()` ne doit plus etre la. Les DEUX conditions sont exigees : un
+  -- trigger sans la suppression du DEFAULT laisserait les deux mecanismes
+  -- cohabiter, et 01600 echouerait sur ce point precis.
   union all
-  select '18. missions.client_id : defaut auth.uid() pose',
-         (select coalesce(column_default, 'AUCUN') from information_schema.columns
-           where table_schema = 'public' and table_name = 'missions'
-             and column_name = 'client_id'),
-         case when (select column_default from information_schema.columns
-           where table_schema = 'public' and table_name = 'missions'
-             and column_name = 'client_id') like '%auth.uid()%'
+  select '18. missions.client_id : trigger actif, DEFAULT absent',
+         (select case
+                  when exists (select 1 from pg_trigger t
+                                where t.tgrelid = 'public.missions'::regclass
+                                  and not t.tgisinternal
+                                  and t.tgenabled = 'O'
+                                  and t.tgname = 'trg_force_mission_client_id')
+                   and exists (select 1 from information_schema.columns
+                                where table_schema = 'public'
+                                  and table_name = 'missions'
+                                  and column_name = 'client_id'
+                                  and column_default is not null)
+                   then 'trigger ACTIF + DEFAULT PRESENT'
+                  when exists (select 1 from pg_trigger t
+                                where t.tgrelid = 'public.missions'::regclass
+                                  and not t.tgisinternal
+                                  and t.tgenabled = 'O'
+                                  and t.tgname = 'trg_force_mission_client_id')
+                   then 'trigger ACTIF, DEFAULT absent'
+                  else 'trigger ABSENT ou desactive'
+                end),
+         case when
+                exists (select 1 from pg_trigger t
+                         where t.tgrelid = 'public.missions'::regclass
+                           and not t.tgisinternal
+                           and t.tgenabled = 'O'
+                           and t.tgname = 'trg_force_mission_client_id')
+              and not exists (select 1 from information_schema.columns
+                                where table_schema = 'public'
+                                  and table_name = 'missions'
+                                  and column_name = 'client_id'
+                                  and column_default is not null)
            then 'OK' else 'ALERTE' end
 
-  -- 19. missions.client_id : le client ne doit plus pouvoir ecrire cette colonne.
+  -- 19. missions.client_id : le droit existe, et il est SANS PUISSANCE.
   --
-  -- Controle JUMELE du 18, et il compte autant que lui. Un DEFAULT sans REVOKE
-  -- n'accomplit rien : le client pourrait toujours envoyer un `client_id` forge,
-  -- et le defaut ne s'appliquerait que s'il l'omet. C'est le REVOKE qui fait de
-  -- l'inversion de responsabilite une garantie, et non une convenance.
+  -- On mesure la PAIRE, jamais le droit seul. Un droit INSERT sans trigger
+  -- laisserait le client choisir l'identite ; un trigger sans droit rendrait
+  -- l'insertion impossible. C'est leur ensemble qui garantit la valeur.
+  --
+  -- Le second critere verifie que la fonction du trigger est bien
+  -- `SECURITY DEFINER` : c'est ce qui permet au trigger d'ecrire `client_id`
+  -- alors que l'appelant n'a pas reellement le droit de la choisir. Une fonction
+  -- ordinaire ne fonctionnerait pas ici.
   union all
-  select '19. missions.client_id : ecriture retiree au client (attendu 0)',
-         (select count(*)::text from information_schema.column_privileges
-           where table_schema = 'public' and table_name = 'missions'
-             and column_name = 'client_id' and grantee = 'authenticated'
-             and privilege_type in ('INSERT','UPDATE','ALL')),
-         case when (select count(*) from information_schema.column_privileges
-           where table_schema = 'public' and table_name = 'missions'
-             and column_name = 'client_id' and grantee = 'authenticated'
-             and privilege_type in ('INSERT','UPDATE','ALL')) = 0
+  select '19. missions.client_id : valeur imposee (droit + trigger)',
+         (select case
+                  when exists (select 1 from information_schema.column_privileges
+                                where table_schema = 'public'
+                                  and table_name = 'missions'
+                                  and column_name = 'client_id'
+                                  and grantee = 'authenticated'
+                                  and privilege_type = 'INSERT')
+                   and exists (select 1 from pg_trigger t
+                                where t.tgrelid = 'public.missions'::regclass
+                                  and not t.tgisinternal
+                                  and t.tgenabled = 'O'
+                                  and t.tgname = 'trg_force_mission_client_id')
+                   and exists (select 1 from pg_proc p
+                                join pg_namespace n on n.oid = p.pronamespace
+                                where n.nspname = 'private'
+                                  and p.proname = 'force_mission_client_id'
+                                  and p.prosecdef)
+                   then 'droit INSERT + trigger SECURITY DEFINER'
+                  else 'INCOMPLET'
+                end),
+         case when
+                exists (select 1 from information_schema.column_privileges
+                         where table_schema = 'public'
+                           and table_name = 'missions'
+                           and column_name = 'client_id'
+                           and grantee = 'authenticated'
+                           and privilege_type = 'INSERT')
+              and exists (select 1 from pg_trigger t
+                         where t.tgrelid = 'public.missions'::regclass
+                           and not t.tgisinternal
+                           and t.tgenabled = 'O'
+                           and t.tgname = 'trg_force_mission_client_id')
+              and exists (select 1 from pg_proc p
+                           join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname = 'private'
+                             and p.proname = 'force_mission_client_id'
+                             and p.prosecdef)
            then 'OK' else 'ALERTE' end
 )
 
