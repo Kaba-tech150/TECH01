@@ -115,7 +115,7 @@ export function SignUpForm({ initialProfile, onSuccess, onSignInPress }: SignUpF
         Créez votre compte SecuGuard
       </Typography>
 
-      {error && (
+      {Boolean(error) && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>

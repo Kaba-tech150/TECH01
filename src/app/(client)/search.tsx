@@ -53,6 +53,30 @@ export default function ClientSearch() {
 
   const resultats = useMemo(() => trierPrestataires(data ?? []), [data]);
 
+  /*
+   * « Des filtres sont-ils appliqués ? » — un BOULÉEN, jamais une chaîne.
+   *
+   * BUG CORRIGÉ LE 2026-09-27. L'écriture d'origine était :
+   *
+   *     {(recherche || ville) && ( <Button … /> )}
+   *
+   * Au démarrage, `recherche` et `ville` valent tous deux `''`. L'expression
+   * `recherche || ville` vaut donc `''`, et `'' && <Button/>` vaut `''` — que
+   * React rend comme un NŒUD TEXTE vide, enfant direct du `<View>`. D'où :
+   *
+   *     Unexpected text node: . A text node cannot be a child of a <View>.
+   *
+   * Le point du message est la ponctuation du libellé de react-native-web, pas
+   * le contenu du nœud.
+   *
+   * React ne rend rien pour `null`, `undefined`, `true` et `false` — mais PAS
+   * pour `''`. Une chaîne vide reste une chaîne, et devient un enfant.
+   *
+   * `Boolean()` rend la question explicite, et rend l'erreur impossible à
+   * commettre de nouveau par inadvertance.
+   */
+  const aDesFiltres = Boolean(recherche.trim() || ville.trim());
+
   const lancer = () => {
     // La saisie n'est appliquée qu'au bouton : chercher à chaque frappe
     // enverrait une requête par caractère, sur un réseau mobile.
@@ -143,7 +167,7 @@ export default function ClientSearch() {
               ? 'Aucun résultat pour ces critères. Élargissez la recherche.'
               : 'Aucun prestataire inscrit pour le moment.'}
           </Typography>
-          {(recherche || ville) && (
+          {aDesFiltres && (
             <Button
               title="Effacer les filtres"
               onPress={reinitialiser}

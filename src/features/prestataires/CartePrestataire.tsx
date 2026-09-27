@@ -48,25 +48,40 @@ export function CartePrestataire({ prestataire }: CartePrestataireProps) {
         {!estAgent && <Badge text="Société" variant="primary" />}
       </View>
 
-      {(prestataire.city || prestataire.zone) && (
+      {/*
+       * TOUTES CES CONDITIONS SONT DES BOOLÉENS, JAMAIS DES CHAÎNES.
+       *
+       * Bug corrigé le 2026-09-27, le même que dans `search.tsx` : écrire
+       *
+       *     {prestataire.city || prestataire.zone && ( <Text/> )}
+       *
+       * produit `'' && …`, c'est-à-dire une chaîne vide, que React rend comme
+       * un NŒUD TEXTE enfant du `<View>`. React ignore `null`, `undefined`,
+       * `true` et `false` — mais pas `''`.
+       *
+       * Aucune de ces erreurs n'est visible à la compilation : `string` et
+       * `boolean` sont tous deux acceptables dans un `&&`, et `tsc` comme
+       * `eslint` passent sans rien signaler. Seule l'exécution les révèle.
+       */}
+      {Boolean(prestataire.city || prestataire.zone) && (
         <Text style={styles.localisation}>
           {[prestataire.city, prestataire.zone].filter(Boolean).join(' · ')}
         </Text>
       )}
 
-      {(prestataire.bio || prestataire.description) && (
+      {Boolean(prestataire.bio || prestataire.description) && (
         <Text style={styles.description} numberOfLines={3}>
           {prestataire.bio ?? prestataire.description}
         </Text>
       )}
 
-      {prestataire.hourlyRate && (
+      {Boolean(prestataire.hourlyRate) && (
         <Text style={styles.tarif}>
           {Number(prestataire.hourlyRate).toLocaleString('fr-FR')} € / heure
         </Text>
       )}
 
-      {prestataire.certificationNumber && (
+      {Boolean(prestataire.certificationNumber) && (
         <Text style={styles.certification}>
           Certification n° {prestataire.certificationNumber}
         </Text>

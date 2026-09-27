@@ -56,7 +56,7 @@ export function SignInForm({ onSuccess, onSignUpPress }: SignInFormProps) {
         Connectez-vous à votre compte SecuGuard
       </Typography>
 
-      {error && (
+      {Boolean(error) && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>

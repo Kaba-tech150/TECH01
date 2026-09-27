@@ -27,7 +27,7 @@ export function StatCard({ title, value, subtitle, icon, variant = 'primary' }: 
 
   return (
     <View style={[styles.statCard, { backgroundColor: variantStyle.backgroundColor }]}>
-      {icon && (
+      {Boolean(icon) && (
         <View style={[styles.iconContainer, { backgroundColor: variantStyle.iconColor + '20' }]}>
           <Text style={styles.icon}>{icon}</Text>
         </View>
