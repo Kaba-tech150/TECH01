@@ -15,7 +15,7 @@
  * l'étape « réserver » avant que l'écriture soit fiable.
  */
 import { supabase } from '@/lib/supabase';
-import type { ProviderStatus } from '@/types';
+import type { ProviderStatus, TableInsert, TableUpdate } from '@/types';
 
 /**
  * Un prestataire, vu par un client.
@@ -209,6 +209,25 @@ function construireFiltre(criteres: RechercheCriteres, colonneTexte: string): st
   return conditions.length > 0 ? conditions.join(',') : null;
 }
 
+/**
+ * Fiche agent du compte connecté.
+ *
+ * Les champs sont des chaînes, comme ceux du formulaire : la conversion vers
+ * les types de la base (`hourly_rate` est un `numeric`) se fait dans le service,
+ * à un seul endroit, plutôt que dans chaque appelant.
+ */
+export type AgentProfile = {
+  id: string;
+  profileId: string;
+  zone: string;
+  bio: string;
+  /** Chaîne vide quand le tarif n'est pas renseigné. */
+  hourlyRate: string;
+  certificationNumber: string;
+  isAvailable: boolean;
+  status: ProviderStatus;
+};
+
 export const providersService = {
   /**
    * Prestataires correspondant aux critères.
@@ -295,5 +314,89 @@ export const providersService = {
     });
 
     return [...listeAgents, ...listeCompanies];
+  },
+
+  /**
+   * Fiche agent du compte connecté, ou `null` s'il n'en a pas encore.
+   *
+   * `maybeSingle()` et non `single()` : l'absence est un état NORMAL — le plus
+   * grand nombre des comptes n'ont pas de fiche. `single()` lèverait une erreur
+   * au lieu de renvoyer `null`, et l'écran afficherait un échec au lieu d'un
+   * formulaire de création.
+   *
+   * `.eq('profile_id', userId)` explicite plutôt que `.single()` implicite : la
+   * colonne porte `unique`, mais l'écrire évite de dépendre de cette contrainte
+   * pour lire une seule ligne.
+   */
+  async getMyAgentProfile(userId: string): Promise<AgentProfile | null> {
+    const { data, error } = await supabase
+      .from('agent_profiles')
+      .select(
+        'id, profile_id, bio, hourly_rate, zone, certification_number, is_available, status',
+      )
+      .eq('profile_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: data.id as string,
+      profileId: data.profile_id as string,
+      zone: (data.zone as string | null) ?? '',
+      bio: (data.bio as string | null) ?? '',
+      hourlyRate:
+        data.hourly_rate === null || data.hourly_rate === undefined
+          ? ''
+          : String(data.hourly_rate),
+      certificationNumber: (data.certification_number as string | null) ?? '',
+      isAvailable: (data.is_available as boolean | null) ?? true,
+      status: data.status as ProviderStatus,
+    };
+  },
+
+  /**
+   * Crée la fiche agent du compte connecté.
+   *
+   * NE PAS AJOUTER `.select()` — même raison que `missionsService.createMission`
+   * le 2026-09-27 : la relecture passerait par la politique de SELECT, et son
+   * échec se déguise en refus d'écriture. On invalide le cache et on relit.
+   *
+   * Ni `status` ni `company_id` ne sont envoyés : `status` n'est pas dans le
+   * `grant insert` de 00300, et la politique exige `status = 'registered'`,
+   * valeur que la colonne prend par défaut. Les envoyer produirait un refus
+   * dont le message ne dirait pas que le problème est le droit.
+   *
+   * LE TYPE EST `TableInsert<'agent_profiles'>`, et non `Record<string, unknown>` :
+   * ce dernier autorise n'importe quelle colonne, y compris celles que la base
+   * refuse. C'est le même principe que `MissionUpdatableFields` : le contrat
+   * TypeScript doit reproduire le `grant`, sinon il laisse passer des écritures
+   * que le serveur rejettera.
+   */
+  async createAgentProfile(charge: TableInsert<'agent_profiles'>): Promise<void> {
+    const { error } = await supabase.from('agent_profiles').insert(charge);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Met à jour la fiche agent.
+   *
+   * Même restriction sur `.select()`, et sur les colonnes : la migration 00300
+   * n'accorde `update` que sur `certification_number`, `certification_expiry`,
+   * `hourly_rate`, `zone`, `bio` et `is_available`. Ni `id`, ni `status`, ni
+   * `profile_id` ne sont modifiables : l'identité et l'état d'accréditation
+   * restent hors de portée du prestataire.
+   */
+  async updateAgentProfile(
+    agentId: string,
+    charge: TableUpdate<'agent_profiles'>,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('agent_profiles')
+      .update(charge)
+      .eq('id', agentId);
+
+    if (error) throw error;
   },
 };
