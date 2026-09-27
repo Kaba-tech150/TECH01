@@ -63,13 +63,40 @@ export type RechercheCriteres = {
 };
 
 
-/** Colonnes demandées pour un agent. */
+/**
+ * Colonnes demandées pour un agent.
+ *
+ * `profiles!inner(full_name)` — et RIEN D'AUTRE.
+ *
+ * ERREUR CORRIGÉE LE 2026-09-27 : la version précédente demandait
+ * `profiles!inner(full_name, city, postal_code)`. Or `public.profiles` ne
+ * possède NI `city` NI `postal_code` : ce sont des colonnes de
+ * `company_profiles`, pas du profil utilisateur. PostgREST rejette la requête
+ * ENTIÈRE, et l'écran affichait « Recherche impossible » — une erreur, et non
+ * une liste vide.
+ *
+ * CONSÉQUENCE DE CONCEPTION, à connaître : LE SCHÉMA NE MODÉLISE PAS LA VILLE
+ * D'UN AGENT. `agent_profiles` ne connaît qu'un `zone` libre, et `profiles`
+ * n'a aucune localisation. Un agent n'a donc pas de ville interprétable,
+ * seulement une zone de texte, telle qu'il l'a saisie.
+ *
+ * On ne comble pas ce trou en inventant une colonne : la ville d'un agent
+ * reste un texte libre, et le traiter comme tel évite de fabriquer une
+ * géographie que personne n'a saisie.
+ */
 const COLONNES_AGENT =
-  'id, profile_id, bio, hourly_rate, zone, certification_number, is_available, status, profiles!inner(full_name, city, postal_code)';
+  'id, profile_id, bio, hourly_rate, zone, certification_number, is_available, status, profiles!inner(full_name)';
 
-/** Colonnes demandées pour une société. */
+/**
+ * Colonnes demandées pour une société.
+ *
+ * `city` et `postal_code` proviennent de `company_profiles` LUI-MÊME, et non de
+ * la jointure sur `profiles` : la version précédente les demandait aux deux
+ * endroits, ce qui est redondant et fait échouer PostgREST dès que l'une des
+ * deux tables ne possède pas la colonne.
+ */
 const COLONNES_COMPANY =
-  'id, profile_id, company_name, description, city, postal_code, status, profiles!inner(full_name, city, postal_code)';
+  'id, profile_id, company_name, description, city, postal_code, status, profiles!inner(full_name)';
 
 /**
  * Forme des lignes brutes renvoyées par PostgREST.
@@ -103,18 +130,18 @@ type LigneCompany = {
 };
 
 /**
- * Extrait le profil joint d'une ligne.
+ * Extrait le nom du profil joint d'une ligne.
+ *
+ * `profiles` ne porte QUE `full_name` comme donnée affichable : ni `city`, ni
+ * `postal_code` n'y existent. Les demander faisait échouer la requête entière
+ * — voir `COLONNES_AGENT`.
  *
  * PostgREST renvoie une jointure many-to-one soit comme un objet, soit comme un
  * tableau selon la relation déduite. Les deux formes sont normalisées ici, une
  * seule fois, plutôt qu'à chaque appelant.
  */
-function lireProfil(joined: unknown): {
-  full_name: string | null;
-  city: string | null;
-  postal_code: string | null;
-} {
-  const vide = { full_name: null, city: null, postal_code: null };
+function lireProfil(joined: unknown): { full_name: string | null } {
+  const vide = { full_name: null };
   if (joined === null || typeof joined !== 'object') return vide;
 
   const candidat = Array.isArray(joined) ? joined[0] : joined;
@@ -123,8 +150,6 @@ function lireProfil(joined: unknown): {
   const p = candidat as Record<string, unknown>;
   return {
     full_name: typeof p.full_name === 'string' ? p.full_name : null,
-    city: typeof p.city === 'string' ? p.city : null,
-    postal_code: typeof p.postal_code === 'string' ? p.postal_code : null,
   };
 }
 
@@ -158,11 +183,26 @@ function construireFiltre(criteres: RechercheCriteres, colonneTexte: string): st
     }
   }
 
-  if (criteres.city) {
+  if (criteres.city && colonneTexte === 'company_name') {
+    // `city` n'existe QUE sur `company_profiles`. L'appliquer aussi aux agents
+    // ferait échouer la requête entière, exactement comme la jointure l'avait
+    // fait : PostgREST rejette dès qu'une colonne demandée n'existe pas.
+    //
+    // Conséquence assumée : filtrer par ville ne restreint pas les agents. Le
+    // schéma ne leur donne pas de ville, seulement une `zone` libre — on ne
+    // filtre pas dessus, car c'est du texte saisi librement et non une
+    // référence à comparer.
     conditions.push(`city.eq.${criteres.city}`);
   }
 
-  if (criteres.uniquementDisponibles) {
+  if (criteres.uniquementDisponibles && colonneTexte !== 'company_name') {
+    // `is_available` n'existe QUE sur `agent_profiles`. Même raison que pour
+    // `city` : PostgREST rejette toute la requête si une colonne demandée
+    // n'existe pas sur la table visée.
+    //
+    // Une société n'est pas « disponible » ou non : elle répond à une demande.
+    // Le filtre ne la concerne donc pas, et l'ignorer est correct — ce n'est
+    // pas un oubli, c'est le modèle.
     conditions.push('is_available.eq.true');
   }
 
@@ -219,8 +259,10 @@ export const providersService = {
           profileId: ligne.profile_id,
           nom: profil.full_name ?? 'Agent sans nom',
           description: null,
-          city: profil.city,
-          postalCode: profil.postal_code,
+          // Le schéma ne donne pas de ville à un agent : `city` et
+          // `postal_code` restent nuls, et seule la `zone` libre est connue.
+          city: null,
+          postalCode: null,
           hourlyRate: ligne.hourly_rate === null ? null : String(ligne.hourly_rate),
           zone: ligne.zone,
           bio: ligne.bio,

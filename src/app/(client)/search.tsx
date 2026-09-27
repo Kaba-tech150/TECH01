@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Typography } from '@/components/ui';
 import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
@@ -35,6 +35,21 @@ export default function ClientSearch() {
   );
 
   const { data, isPending, error, refetch, isFetching } = usePrestataires(criteres);
+
+  // Le détail technique est journalisé DÈS l'erreur, et pas seulement au clic
+  // sur « Réessayer ».
+  //
+  // Le 2026-09-27, l'écran affichait « Recherche impossible » sans qu'aucune
+  // ligne du journal n'explique pourquoi : la cause n'a été trouvée qu'en
+  // comparant la requête au schéma, à la main. Masquer une erreur sans écrire
+  // sa source rend le diagnostic IMPOSSIBLE — c'est exactement ce qui avait été
+  // reproché à `AuthContext.toError` deux jours plus tôt, et le défaut revenait
+  // ailleurs.
+  useEffect(() => {
+    if (error) {
+      logTechnicalError('recherche prestataires', error);
+    }
+  }, [error]);
 
   const resultats = useMemo(() => trierPrestataires(data ?? []), [data]);
 
