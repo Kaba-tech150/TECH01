@@ -1,7 +1,8 @@
 # RAPPORT PROJET — SECU GUARD
 
-> Document de référence unique. Écrit le **2026-09-26** après analyse exhaustive
-> du code : 69 fichiers, 8 355 lignes dans `src/`.
+> Document de référence unique. Première version le **2026-09-26** après analyse
+> exhaustive du code ; **mis à jour le 2026-09-27** après la journée de
+> vérifications fonctionnelles décrite plus bas.
 >
 > L'ancien rapport, riche mais contradictoire et traversé de mentions périmées,
 > est conservé dans `docs_RAPPORT_HISTORIQUE_2026-09-26.md` (539 lignes). Il
@@ -20,33 +21,64 @@
 
 ## État actuel
 
-Le projet **compile, s'exporte et s'ouvre**. Il **n'est pas fonctionnel** : le
-premier flux métier — la création d'une mission — échoue.
+**Au 2026-09-27, deux parcours métier sont validés à l'écran** — pour la
+première fois depuis le début du projet. Le projet ne compile plus seulement :
+il **fait**.
 
 | Domaine | État | Preuve |
 |---|---|---|
-| Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 · `expo export --platform web` = 38 routes |
-| Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur dans les composants |
-| Base Supabase | ✅ **Saine** | **[V]** 9 contrôles au vert · **P1 clos** |
+| Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 · `expo export` 38 routes |
+| Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur |
+| Base Supabase | ✅ **Saine** | **[V]** **19 contrôles sur 19 au vert** |
 | Sécurité de la base | ✅ Sonde retirée | **[V]** `01500` appliquée · contrôle 17 `OK` |
-| Authentification | ✅ **Validée** | **[V]** `getUser()` serveur · profil `3mama@gmail.com` chargé |
-| Parcours client | ✅ **Fonctionnel** | **[V]** insertion 201 — P1 clos le 2026-09-27 |
-| Recherche prestataires | ✅ **Fonctionnelle** | **[D]** service + écran compilent · **[X]** jamais affichée à l'écran |
+| Authentification | ✅ **Validée** | **[V]** `getUser()` serveur · profil chargé |
+| **Parcours client** | ✅ **Fonctionnel** | **[V]** mission créée **depuis l'écran** — P1 clos le 2026-09-27 |
+| **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création **et** modification depuis l'écran |
+| **Recherche prestataires** | ✅ **Fonctionnelle** | **[V]** agent retrouvé **par un client**, nom affiché |
+| Affectation / réservation | ⬜ **Non construite** | **[V]** service écrit · **ni hook ni écran** — voir « Étape en cours » |
 
 **Réponse aux trois questions du cahier des charges :**
 
 1. **Où en sommes-nous ?** Socle, architecture et design system terminés. Base
-   Supabase conforme en lecture, **16 contrôles sur 16 au vert** hors un défaut
-   connu et isolé. **Aucun flux métier n'est fonctionnel.**
+   conforme : **19 contrôles sur 19**. Trois parcours validés à l'écran —
+   mission, fiche agent, recherche. Le quatrième, l'affectation, n'existe pas
+   comme interface.
 2. **Qu'est-ce qui fonctionne ?** L'application démarre, s'exporte, navigue,
-   branche l'authentification, lit les données autorisées, et affiche une
-   interface cohérente.
-3. **Quelle est la prochaine étape ?** Coller `01200`, puis tester la création
-   d'une mission. C'est le test qui manque depuis le début du projet.
+   branche l'authentification, **crée une mission, crée et modifie une fiche
+   agent, et la retrouve par un client**.
+3. **Quelle est la prochaine étape ?** Construire l'affectation — et, avant
+   tout, retirer le `.select()` de `createAssignment`, qui porte déjà le motif
+   exact du défaut P1.
 
 **Réserve générale :** aucun test automatisé n'existe. Les seules validations
 sont `typecheck`, `lint`, `export` et un test manuel sur le web. **Rien n'a été
-vérifié sur un appareil mobile.**
+vérifié sur un appareil mobile.** Et l'absence de test automatisé n'a pas
+seulement laissé un code non couvert : elle a laissé passer **quatre défauts
+que des contrôles existants ne pouvaient pas voir** (voir « Leçon de la
+journée »).
+
+---
+
+## Étape en cours
+
+**Étape 7 — parcours d'affectation. Non commencée.**
+
+Le service existe : `createAssignment`, `publishMission`, `acceptAssignment`,
+`rejectAssignment`. **Rien ne les déclenche.** Il n'y a ni hook
+`useAssignments`, ni écran, et `providers.service.ts` est en lecture seule
+par conception (« AUCUNE ÉCRITURE ICI »).
+
+> **Un défaut est déjà écrit dans le code, avant même l'écran :**
+> `createAssignment` fait `.insert().select().single()`. C'est le motif exact
+> de P1 — l'écriture passe, la relecture échoue, et l'échec est rapporté comme
+> un refus d'écriture. Il faut le corriger **avant** de construire l'interface,
+> pas en déboguant une fois le parcours en service.
+
+**Réserve sur `01200`** : la politique `insert` et le helper
+`can_assign_mission` sont confirmés par les contrôles 11 et 12. **Les droits
+d'insertion eux-mêmes ne sont pas vérifiés par un contrôle dédié**, et le
+parcours n'a jamais tourné. L'état est donc « présent mais non prouvé en
+conditions réelles », pas « validé ».
 
 ---
 
@@ -64,13 +96,72 @@ peut être attaqué : on construirait trois parcours sur un fond qui ne tient pa
 | 0 — Environnement | ✅ | **[V]** versions relevées et fonctionnelles |
 | 1 — Architecture | ✅ | **[V]** structure conforme au plan |
 | 2 — Page d'accueil | ✅ | **[V]** export web, 38 routes |
-| 3 — Supabase | ⚠️ **partielle** | **[V]** conforme en lecture · **[X]** écriture jamais testée |
-| 4 — Authentification | ⚠️ **codée, non prouvée** | **[X]** aucune exécution réussie |
+| 3 — Supabase | ✅ | **[V]** 19 contrôles au vert · **écriture testée à l'écran** |
+| 4 — Authentification | ✅ | **[V]** connexion et inscription exécutées |
 | 5 — Routing par rôle | ✅ | **[V]** les 4 groupes rendent |
+| **6 — Parcours client** | ✅ | **[V]** mission créée depuis l'écran |
+| **6 bis — Fiche agent** | ✅ | **[V]** création **et** modification, avec valeurs en base |
+| **6 ter — Recherche** | ✅ | **[V]** agent retrouvé par un compte client |
+
+> Les étapes 6, 6 bis et 6 ter sont celles qui ont demandé la journée du
+> 2026-09-27. Elles étaient écrites et compilantes depuis longtemps : **elles
+> n'étaient pas fonctionnelles**, et rien dans la chaîne de contrôles ne pouvait
+> le dire.
 
 ## Prochaine étape
 
-**Débloquer la création d'une mission.** Voir P1 dans « Problèmes rencontrés ».
+**Construire le parcours d'affectation**, en commençant par retirer le
+`.select()` de `createAssignment`. Voir « Étape en cours ».
+
+Deux réserves à lever avant de la considérer acquise :
+
+1. **`01200`** — les droits d'insertion sur `mission_assignments` ne sont pas
+   couverts par un contrôle dédié, et le parcours n'a jamais tourné.
+2. **Contrôles 20 et 21** — `01900` et `02000` ont modifié une politique et ajouté
+   une fonction ; `VERIFICATION_RAPIDE.sql` ne les vérifie pas encore. Elles
+   sont appliquées et le parcours fonctionne, mais **rien ne le garantirait
+   demain**.
+
+---
+
+## Leçon de la journée
+
+Quatre défauts ont été trouvés le 2026-09-27. **Aucun n'avait été détecté**, et
+trois d'entre eux étaient invisibles par construction aux contrôles existants.
+
+| Défaut | Pourquoi aucun contrôle ne le voyait |
+|---|---|
+| `mission_assignments` sans politique `insert` | le contrôle 12 le voyait ; le **bilan**, non |
+| `DEFAULT auth.uid()` de `01400` | le contrôle 18 mesurait sa **présence**, pas son **moment d'évaluation** |
+| `grant select` absent sur `agent_profiles` | le contrôle ne demandait que les `INSERT` |
+| `profiles!inner` sur une table fermée | **aucun contrôle n'existait** |
+
+**Le motif est toujours le même : un contrôle qui ne mesure qu'une partie de la
+vérité rend un verdict complet avec assurance.**
+
+Trois conséquences, toutes appliquées :
+
+1. `VERIFICATION_RAPIDE.sql` porte désormais des contrôles qui mesurent le
+   mécanisme réel, pas une approximation — et son compte de politiques a été
+   **recompté sur les fichiers** (37, pas 38).
+2. `check-supabase-access.js` affiche un **avertissement explicite** sur ce qu'il
+   ne peut pas établir, plutôt que de laisser croire que « conforme » couvre la
+   visibilité métier.
+3. Les contrats TypeScript (`AgentProfileUpdatableFields`,
+   `MissionUpdatableFields`) reproduisent désormais les `grant` colonne par
+   colonne, au lieu du schéma complet.
+
+> **Un contrôle doit être lu autant que la base.** L'absence de contrôle ne
+> prouve rien — elle ne prouve surtout pas l'absence de défaut.
+
+Et une leçon de méthode, qui a coûté du temps :
+
+> **Un message d'erreur qui nomme un objet désigne rarement la cause.**
+> `permission denied for table agent_profiles` nommait la TABLE ; la colonne
+> fautive était `profile_id`. Et l'URL de la requête (`id=eq.` et non
+> `profile_id=eq.`) disait que l'appel qui échouait était l'`UPDATE`, pas la
+> lecture. **L'URL et le message étaient tous deux disponibles, et tous deux
+> ont été lus de travers.**
 
 ---
 
@@ -116,7 +207,7 @@ Le plan prévoit 10 domaines. État réel : **[V]**
 |---|---|---|
 | `missions/` | 4 | ✅ réel (schéma, service, hooks, carte) |
 | `villes/` | 3 | ✅ réel (sélecteur, hook, service) |
-| `agents/` | 0 | ⬜ vide |
+| **`prestataires/`** | **5** | ✅ **réel et validé** — schéma, service, hook, carte, index |
 | `auth/` | 0 | ⬜ vide — la logique est dans `context/` |
 | `chat/` | 0 | ⬜ vide |
 | `clients/` | 0 | ⬜ vide |
@@ -125,8 +216,13 @@ Le plan prévoit 10 domaines. État réel : **[V]**
 | `payments/` | 0 | ⬜ vide |
 | `reviews/` | 0 | ⬜ vide |
 
-**8 des 10 domaines du plan sont des dossiers vides.** Ils ont été créés en
+**7 des 10 domaines du plan restent des dossiers vides.** Ils ont été créés en
 amorce de la structure cible, pas en fonction d'un besoin démontré.
+
+> `prestataires/` est le premier dossier `features/` **validé fonctionnellement**
+> : création, modification, et lecture par un tiers. Le plan prévoyait `agents/`,
+> qui ne sera sans doute jamais nécessaire — le domaine réel est « prestataire »,
+> et il couvre agents **et** sociétés.
 
 ## Structure des dossiers
 
@@ -169,7 +265,7 @@ Supabase Edge Functions · Supabase Storage · aucun runner de tests.
 `documents` · `missions` · `mission_assignments` · `wallets` · `transactions` ·
 `reviews` · `messages` · `notifications` · `villes`
 
-### Migrations — 15 fichiers
+### Migrations — 19 fichiers
 
 **[V]** Toutes formatées `AAAAMMJJHHMMSS_description.sql`, idempotentes et
 transactionnelles (`begin;` … `commit;`), sauf `000001_reset_all.sql` qui est un
@@ -193,8 +289,9 @@ outil destructif hors chaîne.
 | `20260926001500` | **retrait de la sonde de diagnostic** | **[V]** **appliquée le 2026-09-27** |
 | `20260926001600` | **identité imposée par trigger `BEFORE INSERT`** | **[V]** **appliquée le 2026-09-27** — contrôles 18 et 19 à `OK` |
 | `20260926001800` | **restauration des droits de lecture des prestataires** | **[V]** **appliquée le 2026-09-27** — `agent_profiles_avec_profil = 200` |
+| `20260926001900` | **agents visibles par les clients dans la recherche** | **[V]** **appliquée le 2026-09-27** |
+| `20260926002000` | **annuaire des agents par fonction** (nom sans ouvrir `profiles`) | **[V]** **appliquée le 2026-09-27** · recherche validée |
 | `000001` | remise à zéro totale (destructif) | outil manuel — **ne plus jamais le rejouer** |
-| `20260926001900` | **agents visibles par les clients dans la recherche** | **[X]** **écrit, en attente d'application** |
 
 > **Statut de `01600`, établi par exécution et non par supposition.** La
 > migration échoue elle-même si le `DEFAULT` de `client_id` subsiste **ou** si
