@@ -89,7 +89,35 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
    * vérification, et « missions?select=* -> [] » est la preuve qu'il n'y en a
    * aucune aujourd'hui.
    */
-  const test = {
+  /*
+   * BISECTION DE LA POLITIQUE.
+   *
+   * La clause WITH CHECK est :
+   *
+   *     client_id = (select auth.uid()) AND status = 'draft'
+   *
+   * Deux conditions, et l'échec ne dit pas laquelle. Trois insertions
+   * permettent de les isoler SANS toucher à la base, puisque l'API REST
+   * renvoie un message différent pour chacune :
+   *
+   *   A. avec client_id, sans status
+   *      -> RLS        : ni l'un ni l'autre n'est vérifié
+   *      -> NOT NULL   : le déclencheur NE FOURNIT PAS client_id
+   *
+   *   B. SANS client_id
+   *      -> NOT NULL   : le déclencheur ne s'exécute pas, et la colonne
+   *                      n'a pas de DEFAULT depuis la migration 01600
+   *      -> RLS        : le déclencheur s'exécute, fournit client_id, et
+   *                      c'est donc `status` qui est faux
+   *
+   *   C. avec client_id ET status = 'draft' explicites
+   *      -> RLS        : c'est donc `client_id` qui est faux
+   *      -> 201        : les deux conditions sont vérifiées
+   *
+   * C'est la seule méthode qui reste : un contrôle SQL dirait l'ÉTAT de la
+   * base, pas ce que PostgreSQL ÉVALUE au moment de l'insertion.
+   */
+  const test: Record<string, unknown> = {
     client_id: uid,
     title: 'DIAG_PROBE',
     address: 'DIAG_PROBE',
@@ -99,31 +127,54 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
     agent_count: 1,
   };
 
-  try {
-    const insertion = await fetch(`${base}/rest/v1/missions?select=*`, {
-      method: 'POST',
-      headers: {
-        ...entetes,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(test),
-    });
-    const corpsInsertion = await insertion.text();
-    console.warn(
-      `[SecuGuard][diag] POST missions -> ${insertion.status} ` +
-        `| corps=${corpsInsertion.slice(0, 400)}`,
-    );
+  const sondes: { nom: string; corps: Record<string, unknown> }[] = [
+    { nom: 'A_avec_client_id', corps: { ...test } },
+    { nom: 'B_sans_client_id', corps: { ...test, client_id: undefined } },
+    { nom: 'C_avec_status', corps: { ...test, status: 'draft' } },
+  ];
 
-    // Nettoyage systématique : ce que la sonde a créé, elle le détruit.
+  for (const sonde of sondes) {
+    const charge = sonde.corps;
+    // `undefined` n'est pas sérialisable : PostgREST le traiterait comme une
+    // colonne présente valant NULL, ce qui n'est pas la même chose que
+    // l'omettre. La clé est donc retirée explicitement.
+    if (charge.client_id === undefined) {
+      delete charge.client_id;
+    }
+
+    try {
+      const reponse = await fetch(`${base}/rest/v1/missions?select=*`, {
+        method: 'POST',
+        headers: {
+          ...entetes,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(charge),
+      });
+      const corps = await reponse.text();
+      console.warn(
+        `[SecuGuard][diag] SONDE ${sonde.nom} -> ${reponse.status} ` +
+          `| ${corps.slice(0, 220) || '(vide)'}`,
+      );
+    } catch (erreur) {
+      console.warn(
+        `[SecuGuard][diag] SONDE ${sonde.nom} -> erreur ` +
+          `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+      );
+    }
+  }
+
+  // Nettoyage systématique : ce que les sondes ont créé, elles le détruisent.
+  try {
     await fetch(`${base}/rest/v1/missions?title=eq.DIAG_PROBE`, {
       method: 'DELETE',
       headers: entetes,
     });
-    console.warn('[SecuGuard][diag] ligne de test supprimee');
+    console.warn('[SecuGuard][diag] lignes de test supprimees');
   } catch (erreur) {
     console.warn(
-      `[SecuGuard][diag] POST missions -> erreur ` +
+      `[SecuGuard][diag] nettoyage -> erreur ` +
         `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
     );
   }
