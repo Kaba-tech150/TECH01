@@ -88,38 +88,41 @@ export type RechercheCriteres = {
  * reste un texte libre, et le traiter comme tel évite de fabriquer une
  * géographie que personne n'a saisie.
  */
-const COLONNES_AGENT =
-  'id, profile_id, bio, hourly_rate, zone, certification_number, is_available, status, profiles!inner(full_name)';
-
 /**
  * Colonnes demandées pour une société.
  *
- * `city` et `postal_code` proviennent de `company_profiles` LUI-MÊME, et non de
- * la jointure sur `profiles` : la version précédente les demandait aux deux
- * endroits, ce qui est redondant et fait échouer PostgREST dès que l'une des
- * deux tables ne possède pas la colonne.
+ * PLUS DE JOINTURE, pour la MÊME raison que les agents : `profiles!inner` ne
+ * pouvait pas aboutir pour un client, puisque `profiles` n'est pas lisible.
+ *
+ * Ce n'est pas une perte : le nom affiché d'une société est `company_name`, qui
+ * vit sur `company_profiles` LUI-MÊME. La jointure n'apportait que
+ * `full_name`, utilisé uniquement comme repli — et ce repli ne pouvait jamais
+ * se déclencher, la jointure écartant la ligne avant.
+ *
+ * `city` et `postal_code` proviennent aussi de `company_profiles` : la version
+ * précédente les demandait aux deux endroits, ce qui est redondant et fait
+ * échouer PostgREST dès que l'une des deux tables ne possède pas la colonne.
  */
 const COLONNES_COMPANY =
-  'id, profile_id, company_name, description, city, postal_code, status, profiles!inner(full_name)';
+  'id, profile_id, company_name, description, city, postal_code, status';
 
 /**
- * Forme des lignes brutes renvoyées par PostgREST.
+ * Forme des lignes brutes renvoyées par la fonction `liste_agents_publics`.
  *
- * Elle est déclarée explicitement plutôt que laissée en `any` : le `select`
- * avec jointure renvoie un objet dont le type exact est difficile à écrire,
- * mais `unknown` + une garde reste honnête, là où `any` désactive le contrôle
- * de type sur tout le fichier.
+ * `full_name` remplace `profiles: unknown` : la jointure a disparu, donc le nom
+ * arrive en COLONNE, directement. C'est plus simple, et surtout exact : il n'y a
+ * plus de forme à normaliser, donc plus de risque que le nom se perde.
  */
 type LigneAgent = {
   id: string;
   profile_id: string;
+  full_name: string | null;
+  zone: string | null;
   bio: string | null;
   hourly_rate: number | null;
-  zone: string | null;
   certification_number: string | null;
   is_available: boolean | null;
   status: ProviderStatus;
-  profiles: unknown;
 };
 
 type LigneCompany = {
@@ -130,32 +133,7 @@ type LigneCompany = {
   city: string | null;
   postal_code: string | null;
   status: ProviderStatus;
-  profiles: unknown;
 };
-
-/**
- * Extrait le nom du profil joint d'une ligne.
- *
- * `profiles` ne porte QUE `full_name` comme donnée affichable : ni `city`, ni
- * `postal_code` n'y existent. Les demander faisait échouer la requête entière
- * — voir `COLONNES_AGENT`.
- *
- * PostgREST renvoie une jointure many-to-one soit comme un objet, soit comme un
- * tableau selon la relation déduite. Les deux formes sont normalisées ici, une
- * seule fois, plutôt qu'à chaque appelant.
- */
-function lireProfil(joined: unknown): { full_name: string | null } {
-  const vide = { full_name: null };
-  if (joined === null || typeof joined !== 'object') return vide;
-
-  const candidat = Array.isArray(joined) ? joined[0] : joined;
-  if (candidat === null || typeof candidat !== 'object') return vide;
-
-  const p = candidat as Record<string, unknown>;
-  return {
-    full_name: typeof p.full_name === 'string' ? p.full_name : null,
-  };
-}
 
 
 /**
@@ -170,44 +148,28 @@ function lireProfil(joined: unknown): { full_name: string | null } {
  *
  * Les jokers sont ajoutés ici et non par l'appelant : un appelant ne doit pas
  * pouvoir oublier `%` et obtenir un `=` accidentel, ni injecter un joker.
+ *
+ * ⚠️ CETTE FONCTION NE SERT PLUS QU'AUX SOCIÉTÉS.
+ *
+ * Les agents passent par `liste_agents_publics`, qui reçoit le terme en
+ * paramètre et applique le sien. Réunir les deux dans un même mécanisme
+ * aurait exigé de dupliquer la recherche en JavaScript, donc de la
+ * réimplémenter — et une règle écrite deux fois finit toujours par diverger.
  */
 function construireFiltre(criteres: RechercheCriteres, colonneTexte: string): string | null {
   const conditions: string[] = [];
-  const terme = criteres.recherche?.trim();
-
-  if (terme) {
-    conditions.push(`${colonneTexte}.ilike.%${terme}%`);
-    // `bio` n'existe que chez un agent, `description` que chez une société.
-    // On ne filtre donc que sur des colonnes communes aux deux tables : sinon
-    // PostgREST répond « colonne inconnue » et la recherche entière échoue.
+  if (criteres.recherche?.trim()) {
+    conditions.push(`${colonneTexte}.ilike.%${criteres.recherche.trim()}%`);
+    // `description` est la seule colonne de texte commune pertinente pour une
+    // société. On ne filtre pas sur `profiles` : cette table n'est pas lisible
+    // par un client, et la colonne n'y est pas accessible.
     if (colonneTexte === 'company_name') {
-      conditions.push(`description.ilike.%${terme}%`);
-    } else {
-      conditions.push(`bio.ilike.%${terme}%`);
+      conditions.push(`description.ilike.%${criteres.recherche.trim()}%`);
     }
   }
 
-  if (criteres.city && colonneTexte === 'company_name') {
-    // `city` n'existe QUE sur `company_profiles`. L'appliquer aussi aux agents
-    // ferait échouer la requête entière, exactement comme la jointure l'avait
-    // fait : PostgREST rejette dès qu'une colonne demandée n'existe pas.
-    //
-    // Conséquence assumée : filtrer par ville ne restreint pas les agents. Le
-    // schéma ne leur donne pas de ville, seulement une `zone` libre — on ne
-    // filtre pas dessus, car c'est du texte saisi librement et non une
-    // référence à comparer.
+  if (criteres.city) {
     conditions.push(`city.eq.${criteres.city}`);
-  }
-
-  if (criteres.uniquementDisponibles && colonneTexte !== 'company_name') {
-    // `is_available` n'existe QUE sur `agent_profiles`. Même raison que pour
-    // `city` : PostgREST rejette toute la requête si une colonne demandée
-    // n'existe pas sur la table visée.
-    //
-    // Une société n'est pas « disponible » ou non : elle répond à une demande.
-    // Le filtre ne la concerne donc pas, et l'ignorer est correct — ce n'est
-    // pas un oubli, c'est le modèle.
-    conditions.push('is_available.eq.true');
   }
 
   return conditions.length > 0 ? conditions.join(',') : null;
@@ -248,10 +210,19 @@ export const providersService = {
    * les politiques décident de ce qui est visible. Le client ne doit pas
    * réimplémenter cette règle, sinon l'administrateur verrait un résultat
    * différent du sien pour la même requête.
+   *
+   * LES AGENTS PASSENT PAR UNE FONCTION, PAS PAR UNE TABLE
+   *
+   * `agent_profiles` est lue via `liste_agents_publics`, parce que le nom
+   * affiché (`full_name`) vit dans `profiles`, table fermée au client. Lire les
+   * deux par jointure ne pouvait donc pas aboutir — voir `COLONNES_AGENT`.
+   *
+   * Les sociétés, elles, sont lues directement : leur nom est `company_name`,
+   * sur leur propre table. Aucune fonction n'est nécessaire.
    */
   async search(criteres: RechercheCriteres = {}): Promise<Prestataire[]> {
-    const filtreAgent = construireFiltre(criteres, 'profiles.full_name');
     const filtreCompany = construireFiltre(criteres, 'company_name');
+    const terme = criteres.recherche?.trim() || null;
 
     // Le filtre s'applique APRÈS `select()`.
     //
@@ -262,60 +233,68 @@ export const providersService = {
     // Deux branches explicites plutôt qu'un ternaire : `.or()` attend un
     // argument non nul, et un filtre calculé ne peut pas le garantir au
     // compilateur.
-    const baseAgents = supabase.from('agent_profiles').select(COLONNES_AGENT);
     const baseCompanies = supabase.from('company_profiles').select(COLONNES_COMPANY);
 
+    // `null` et non `''` : la fonction distingue les deux, et une chaîne vide
+    // signify « pas de recherche » autant qu'un `null`. Elle reçoit donc ce que
+    // l'utilisateur a réellement saisi, nettoyé.
     const [agents, companies] = await Promise.all([
-      filtreAgent ? baseAgents.or(filtreAgent) : baseAgents,
+      supabase.rpc('liste_agents_publics', { p_texte: terme }),
       filtreCompany ? baseCompanies.or(filtreCompany) : baseCompanies,
     ]);
 
     if (agents.error) throw agents.error;
     if (companies.error) throw companies.error;
 
-    const listeAgents: Prestataire[] = ((agents.data ?? []) as unknown as LigneAgent[]).map(
-      (ligne) => {
-        const profil = lireProfil(ligne.profiles);
-        return {
-          kind: 'agent',
-          id: ligne.id,
-          profileId: ligne.profile_id,
-          nom: profil.full_name ?? 'Agent sans nom',
-          description: null,
-          // Le schéma ne donne pas de ville à un agent : `city` et
-          // `postal_code` restent nuls, et seule la `zone` libre est connue.
-          city: null,
-          postalCode: null,
-          hourlyRate: ligne.hourly_rate === null ? null : String(ligne.hourly_rate),
-          zone: ligne.zone,
-          bio: ligne.bio,
-          certificationNumber: ligne.certification_number,
-          isAvailable: ligne.is_available,
-          status: ligne.status,
-        };
-      },
-    );
+    const lignesAgents = (agents.data ?? []) as unknown as LigneAgent[];
+
+    // Filtre de disponibilité, appliqué APRÈS l'appel.
+    //
+    // `is_available` n'a pas été mis en paramètre de la fonction : c'est un
+    // critère d'affichage, pas une règle de sécurité. Le filtrer ici ne peut pas
+    // contourner quoi que ce soit — la fonction a DÉJÀ rendu ce qu'elle jugeait
+    // visible. Filtrer une liste plus large n'expose rien de plus.
+    const agentsVisibles = criteres.uniquementDisponibles
+      ? lignesAgents.filter((l) => l.is_available === true)
+      : lignesAgents;
+
+    const listeAgents: Prestataire[] = agentsVisibles.map((ligne) => ({
+      kind: 'agent',
+      id: ligne.id,
+      profileId: ligne.profile_id,
+      nom: ligne.full_name ?? 'Agent sans nom',
+      description: null,
+      // Le schéma ne donne pas de ville à un agent : `city` et
+      // `postal_code` restent nuls, et seule la `zone` libre est connue.
+      city: null,
+      postalCode: null,
+      hourlyRate: ligne.hourly_rate === null ? null : String(ligne.hourly_rate),
+      zone: ligne.zone,
+      bio: ligne.bio,
+      certificationNumber: ligne.certification_number,
+      isAvailable: ligne.is_available,
+      status: ligne.status,
+    }));
 
     const listeCompanies: Prestataire[] = (
       (companies.data ?? []) as unknown as LigneCompany[]
-    ).map((ligne) => {
-      const profil = lireProfil(ligne.profiles);
-      return {
-        kind: 'company',
-        id: ligne.id,
-        profileId: ligne.profile_id,
-        nom: ligne.company_name || profil.full_name || 'Société sans nom',
-        description: ligne.description,
-        city: ligne.city,
-        postalCode: ligne.postal_code,
-        hourlyRate: null,
-        zone: null,
-        bio: null,
-        certificationNumber: null,
-        isAvailable: null,
-        status: ligne.status,
-      };
-    });
+    ).map((ligne) => ({
+      kind: 'company',
+      id: ligne.id,
+      profileId: ligne.profile_id,
+      // `company_name` est sur la table elle-même : aucun repli n'est nécessaire
+      // depuis la disparition de la jointure sur `profiles`.
+      nom: ligne.company_name || 'Société sans nom',
+      description: ligne.description,
+      city: ligne.city,
+      postalCode: ligne.postal_code,
+      hourlyRate: null,
+      zone: null,
+      bio: null,
+      certificationNumber: null,
+      isAvailable: null,
+      status: ligne.status,
+    }));
 
     return [...listeAgents, ...listeCompanies];
   },

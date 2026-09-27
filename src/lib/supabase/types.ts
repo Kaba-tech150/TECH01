@@ -644,6 +644,30 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
+      /**
+       * Annuaire des agents — migration 20260926002000.
+       *
+       * Rend `full_name` parce que le nom affiché n'existe que dans `profiles`,
+       * table fermée au client. La fonction rend ce nom et RIEN d'autre de
+       * `profiles` : ni téléphone, ni avatar.
+       *
+       * `p_texte` : `null` ou vide = pas de recherche. Sinon le terme doit se
+       * trouver dans le nom, la zone OU la bio.
+       */
+      liste_agents_publics: {
+        Args: { p_texte: string | null };
+        Returns: {
+          id: string;
+          profile_id: string;
+          full_name: string | null;
+          zone: string | null;
+          bio: string | null;
+          hourly_rate: number | null;
+          certification_number: string | null;
+          is_available: boolean | null;
+          status: string | null;
+        }[];
+      };
       accept_assignment: {
         Args: { target_assignment_id: string };
         Returns: Database['public']['Enums']['assignment_status'];
