@@ -186,6 +186,34 @@ export function toUserFacingError(
     };
   }
 
+  // Droit manquant sur une TABLE ou une COLONNE — 2026-09-27.
+  //
+  // TROU DE LA TRADUCTION, CORRIGÉ LE MÊME JOUR.
+  //
+  // PostgreSQL distingue nettement deux refus, et l'un des deux n'était
+  // traduit par AUCUNE branche :
+  //
+  //   « new row violates row-level security policy »  -> la POLITIQUE refuse
+  //   « permission denied for table X »               -> un GRANT manque
+  //
+  // Le second tombait sur le message générique — « Impossible d'enregistrer
+  // votre fiche » — qui ne dit rien et ne suggère aucune action. L'utilisateur
+  // ne pouvait ni comprendre, ni savoir quoi faire.
+  //
+  // C'est aussi le cas le plus instructif du fichier : un droit manquant est
+  // une erreur de CONFIGURATION, pas une action d'utilisateur. Le message doit
+  // donc le dire, et le dire comme tel.
+  //
+  // Le nom de la table n'est pas rappelé : il pourrait révéler la structure.
+  if (lowered.includes('permission denied for table')) {
+    return {
+      message:
+        'Le serveur refuse cette opération : une permission manque côté configuration. L’équipe technique doit l’ajouter — ce n’est pas une action de votre part.',
+      technical,
+      isServiceIssue: true,
+    };
+  }
+
   // Violation RLS sur une opération de données (mission, document, avis,
   // message, portefeuille, affectation).
   //
