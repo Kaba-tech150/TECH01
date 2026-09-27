@@ -69,29 +69,51 @@ export function useCreateMission() {
   return useMutation({
     mutationFn: async (input: CreateMissionInput) => {
       /*
-       * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
+       * VALIDATION DU JETON CÔTÉ SERVEUR — `getUser()`, PAS `getSession()`.
        *
-       * Affiche la charge utile réellement envoyée. L'incident en cours
-       * (violation RLS alors que neuf contrôles base sont au vert) ne peut
-       * venir que d'ici : soit `client_id` n'est pas transmis et la colonne,
-       * devoidue de DEFAULT par 01600, vaut NULL ; soit il est transmis et le
-       * trigger ne s'exécute pas.
+       * L'incident du 2026-09-27 a montré pourquoi, et la différence est
+       * entièrement dans le mot « local ».
        *
-       * Ces deux cas produisent EXACTEMENT le même message serveur, et les
-       * distinguer demandait jusqu'ici un aller-retour en SQL Editor.
-       * Journaliser la charge utile coûte une ligne et tranche immédiatement.
+       * `getSession()` ne fait AUCUN appel réseau : il lit l'objet session
+       * dans le stockage de l'appareil et le renvoie tel quel. Il renvoie donc
+       * UN JETON PÉRIMÉ sans jamais le faire vérifier.
+       *
+       * Ce qui s'est passé, dans l'ordre du journal Metro :
+       *
+       *   1. `auth/v1/token?grant_type=password` -> 400
+       *      La connexion ÉCHOUE. Le compte n'est pas confirmé.
+       *   2. `getSession()` renvoie pourtant `uid=ec0617ec-…`
+       *      Un objet session périmé traîne dans le stockage local.
+       *   3. Le premier garde-fou, fondé sur `getSession()`, VALIDE donc à tort.
+       *   4. `missions?select=*` -> 403
+       *      PostgREST rejette le jeton, et retombe sur le rôle `anon`.
+       *   5. `auth.uid()` vaut NULL côté base
+       *      `client_id = auth.uid()` s'évalue à NULL, donc faux, donc la
+       *      politique refuse la ligne.
+       *
+       * `getUser()`, lui, appelle `/auth/v1/user` : un jeton invalide renvoie
+       * 401, et la session est réputée absente. C'est la SEULE source
+       * autoritaire, et la seule qui corresponde à ce que le serveur pense
+       * réellement de nous.
+       *
+       * Le coût est un aller-retour réseau avant chaque écriture. C'est le
+       * prix à payer : un garde-fou qui laisse passer un jeton invalide coûte
+       * un message serveur incompréhensible, et il a valu une journée
+       * entière de diagnostic sur une base parfaitement saine.
        */
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
+      const { data, error: erreurUser } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (erreurUser || !data.user) {
+        // La session locale est purifiée : sans cela, le même jeton périmé
+        // continuerait de passer pour une session valide, ici et partout.
+        void supabase.auth.signOut();
         throw new Error(
           'Session absente : reconnectez-vous avant de créer une mission.',
         );
       }
 
       const charge = {
-        client_id: session.user.id,
+        client_id: data.user.id,
         title: input.title,
         description: input.description,
         address: input.address,
@@ -104,8 +126,16 @@ export function useCreateMission() {
         special_requirements: input.specialRequirements,
       };
 
+      /*
+       * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
+       *
+       * Journalise le résultat de la VALIDATION, pas seulement la charge utile.
+       * Le journal du 2026-09-27 a montré que la charge utile ne suffisait pas :
+       * elle était correcte, et l'insertion a quand même échoué. Ce qui
+       * manquait, c'est la réponse du serveur sur le jeton.
+       */
       console.warn(
-        `[SecuGuard][diag] mission — uid=${session.user.id} ` +
+        `[SecuGuard][diag] mission — uid=${data.user.id} ` +
           `colonnes=${Object.keys(charge).sort().join(',')}`,
       );
 
