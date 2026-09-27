@@ -103,7 +103,7 @@ select
   policyname,
   permissive,
   roles::text as roles,
-  using_expr
+  qual
 from pg_policies
 where schemaname = 'public' and tablename = 'missions' and cmd = 'SELECT';
 
@@ -117,7 +117,13 @@ select
   p.proname,
   p.prosecdef as security_definer,
   p.provolatile as volatilite,
-  has_function_privilege('authenticated', p.oid, 'EXECUTE') as executable_par_authenticated
+  -- ATTENTION : `has_function_privilege('authenticated', p.oid, 'EXECUTE')` est
+  -- AMBIGUE quand on lui passe un nom de rôle en texte : elle privilégie
+  -- silencieusement la signature `(oid, oid)` et ne teste pas le rôle voulu.
+  -- Le projet a déjà été trompé par ce détail — un contrôle affichait
+  -- « absent » pour une fonction correctement accordée.
+  -- On lit donc l'ACL brute, sans interprétation susceptible de tromper.
+  coalesce(p.proacl::text, '<<< AUCUN ACL : heritee de PUBLIC >>>') as acl_brut
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 where p.proname = 'can_view_mission';
