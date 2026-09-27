@@ -54,23 +54,32 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
     Authorization: `Bearer ${accessToken}`,
   };
 
-  /* Lecture : sert de témoin. Si elle répond 200, le jeton est bon et la RLS
-     de lecture laisse passer l'utilisateur. */
+  /*
+   * RÉSULTATS EN UNE SEULE LIGNE.
+   *
+   * ÉCHEC CONSTATÉ LE 2026-09-27 : les sondes étaient journalisées chacune
+   * dans leur propre `console.warn`. Le navigateur n'affiche que les DERNIÈRES
+   * lignes — six lignes, exactement le nombre produit par une tentative. La
+   * ligne de nettoyage, émise en dernier, était donc la seule lisible, et les
+   * trois résultats, dont tout dépendait, disparaissaient.
+   *
+   * On n'émet donc plus qu'un seul appel, après les trois sondes et le
+   * nettoyage : le journal ne peut plus rien masquer.
+   */
+  const rapport: string[] = [];
+
   for (const cible of [
     '/rest/v1/profiles?select=*&limit=1',
     '/rest/v1/missions?select=*&limit=1',
   ]) {
     try {
       const reponse = await fetch(base + cible, { headers: entetes });
-      const corps = await reponse.text();
-      console.warn(
-        `[SecuGuard][diag] GET ${cible.split('?')[0]} -> ${reponse.status} ` +
-          `| corps=${corps.slice(0, 200)}`,
-      );
+      rapport.push(`GET ${cible.split('?')[0].split('/').pop()}=${reponse.status}`);
     } catch (erreur) {
-      console.warn(
-        `[SecuGuard][diag] GET ${cible.split('?')[0]} -> erreur ` +
-          `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+      rapport.push(
+        `GET ${cible.split('?')[0].split('/').pop()}=ERREUR:${
+          erreur instanceof Error ? erreur.message : 'inconnue'
+        }`,
       );
     }
   }
@@ -153,31 +162,39 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
         body: JSON.stringify(charge),
       });
       const corps = await reponse.text();
-      console.warn(
-        `[SecuGuard][diag] SONDE ${sonde.nom} -> ${reponse.status} ` +
-          `| ${corps.slice(0, 220) || '(vide)'}`,
-      );
+      // Le message est réduit à sa partie utile : « new row violates
+      // row-level security policy » tient en `RLS`, et « null value in column
+      // "client_id" violates not-null constraint » en `NOTNULL`.
+      const signature = /not-null/i.test(corps)
+        ? 'NOTNULL'
+        : /row-level security/i.test(corps)
+          ? 'RLS'
+          : corps.slice(0, 90);
+      rapport.push(`SONDE${sonde.nom.charAt(0)}=${reponse.status}:${signature}`);
     } catch (erreur) {
-      console.warn(
-        `[SecuGuard][diag] SONDE ${sonde.nom} -> erreur ` +
-          `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+      rapport.push(
+        `SONDE${sonde.nom.charAt(0)}=ERREUR:${
+          erreur instanceof Error ? erreur.message : 'inconnue'
+        }`,
       );
     }
   }
 
   // Nettoyage systématique : ce que les sondes ont créé, elles le détruisent.
   try {
-    await fetch(`${base}/rest/v1/missions?title=eq.DIAG_PROBE`, {
+    const reponse = await fetch(`${base}/rest/v1/missions?title=eq.DIAG_PROBE`, {
       method: 'DELETE',
       headers: entetes,
     });
-    console.warn('[SecuGuard][diag] lignes de test supprimees');
+    rapport.push(`NETTOYAGE=${reponse.status}`);
   } catch (erreur) {
-    console.warn(
-      `[SecuGuard][diag] nettoyage -> erreur ` +
-        `${erreur instanceof Error ? erreur.message : 'inconnue'}`,
+    rapport.push(
+      `NETTOYAGE=ERREUR:${erreur instanceof Error ? erreur.message : 'inconnue'}`,
     );
   }
+
+  // UN SEUL appel, en dernier : le journal ne peut plus masquer de résultat.
+  console.warn(`[SecuGuard][diag] ${rapport.join(' | ')}`);
 }
 
 /**
@@ -281,20 +298,21 @@ export function useCreateMission() {
       /*
        * DIAGNOSTIC TEMPORAIRE — 2026-09-27. À RETIRER.
        *
-       * Le jeton est validé, mais deux tables répondent 403 et 406. On
-       * interroge l'API avec ce même jeton pour obtenir le code et le corps de
-       * la réponse, que le journal Metro n'affiche pas.
+       * Le jeton est validé, mais l'insertion est refusée en 42501. On
+       * interroge l'API avec ce même jeton pour obtenir le code et le corps
+       * de la réponse, que le journal n'afficherait pas.
+       *
+       * UNE SEULE LIGNE EST ÉMISE, et la dernière. C'est délibéré : le
+       * navigateur n'affiche que les dernières lignes de la console, et une
+       * tentative en produisait six. Tout ce qui précède — lectures témoins,
+       * trois sondes, nettoyage — disparaissait, et il ne restait que la
+       * ligne de nettoyage, émise en dernier. C'est arrivé le 2026-09-27.
        */
       const { data: donneesSession } = await supabase.auth.getSession();
       const jeton = donneesSession.session?.access_token;
       if (jeton) {
         await diagnostiquerReseau(jeton, data.user.id);
       }
-
-      console.warn(
-        `[SecuGuard][diag] mission — uid=${data.user.id} ` +
-          `colonnes=${Object.keys(charge).sort().join(',')}`,
-      );
 
       return missionsService.createMission(charge);
     },
