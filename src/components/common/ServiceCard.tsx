@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface ServiceCardProps {
   title: string;
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
 
   serviceTitle: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.displayBold,
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },

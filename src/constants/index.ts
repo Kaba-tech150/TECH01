@@ -44,8 +44,17 @@ export const COLORS = {
   /* --- États --- */
   success: '#00C853',
   error: '#BA1A1A',
+  /** Fond de l'action d'urgence : même rouge, à 8% pour ne pas crier. */
+  errorSoft: 'rgba(186, 26, 26, 0.08)',
   warning: '#F39C12',
   info: '#1D63FF',
+
+  /**
+   * Voile de modale : assombrit la page derrière une feuille ascendante.
+   *
+   * Noir et non la teinte de texte, pour ne pas teinter le fond d'origine.
+   */
+  scrim: 'rgba(17, 24, 39, 0.5)',
 } as const;
 
 export const SPACING = {
@@ -136,6 +145,16 @@ export const SHADOWS = {
 
 /** Liseré cyan 1px : signature visuelle de la marque sur les cartes. */
 export const HAIRLINE_CYAN = 'rgba(0, 210, 255, 0.28)';
+
+/**
+ * Variante atténuée, réservée à la bordure supérieure de la barre d'onglets.
+ *
+ * La bordure d'onglets traverse toute la largeur de l'écran : à l'opacité du
+ * liseré de carte, elle dessinerait une ligne trop présente en bas de chaque
+ * page. D'où cette valeur distincte, et non une couleur en dur dans le layout.
+ */
+export const HAIRLINE_CYAN_SOFT = 'rgba(0, 210, 255, 0.18)';
+
 export const HAIRLINE_COBALT = 'rgba(29, 99, 255, 0.25)';
 
 export const SCREEN_PADDING = 20;

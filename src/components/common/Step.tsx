@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface StepProps {
   number: number;
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
 
   stepNumberText: {
     color: COLORS.background,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     fontSize: FONT_SIZES.lg,
   },
 
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
 
   stepTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.displayBold,
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },

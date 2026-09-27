@@ -13,30 +13,26 @@ import type { TableInsert, TableUpdate, Ville } from '@/types';
  */
 export const villesService = {
   /**
-   * Villes actuellement desservies, triées par nom.
+   * Villes visibles par l'appelant.
    *
-   * Aucune ville n'est filtrée côté client : la politique RLS
-   * « Villes actives lisibles par tous » s'en charge, et elle est la seule
-   * source de vérité. Filtrer ici dupliquerait la règle et risquerait de
-   * diverger.
-   */
-  async getActiveCities(): Promise<Ville[]> {
-    const { data, error } = await supabase
-      .from('villes')
-      .select('id, nom, code_postal, region, active, created_at, updated_at')
-      .order('nom');
-
-    if (error) throw error;
-    return data;
-  },
-
-  /**
-   * Toutes les villes, y compris désactivées.
+   * AUCUN FILTRAGE CÔTÉ CLIENT — et c'est délibéré.
    *
-   * Réservé à l'administration : c'est la seule requête qui remonte une ville
-   * inactive, et la politique RLS ne l'accorde qu'à un administrateur.
+   * La politique RLS « Villes actives lisibles par tous » porte la règle
+   * complète : `using (active or private.is_admin())`. Un utilisateur ordinaire
+   * ne voit donc que les villes actives, tandis qu'un administrateur voit aussi
+   * les villes désactivées — sur la MÊME requête.
+   *
+   * Le comportement est entièrement porté par la base, seule source de vérité.
+   * Filtrer ici (`where active = true`) dupliquerait la règle et romprait le
+   * cas de l'administrateur, qui a besoin de voir les villes désactivées pour
+   * vérifier une désactivation sans risquer de la contourner.
+   *
+   * D'où le nom `listCities`, et non `getActiveCities` : la seconde
+   * formulation promettait un filtre actif que le code n'applique pas. Elle
+   * avait un jumeau, `getAllCities`, qui exécutait la requête identique — deux
+   * noms pour un seul comportement. Aucun appelant n'utilisait l'un ou l'autre.
    */
-  async getAllCities(): Promise<Ville[]> {
+  async listCities(): Promise<Ville[]> {
     const { data, error } = await supabase
       .from('villes')
       .select('id, nom, code_postal, region, active, created_at, updated_at')

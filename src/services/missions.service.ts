@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { TableInsert, TableUpdate } from '@/types';
+import type { MissionUpdatableFields, TableInsert } from '@/types';
 
 type MissionAssignmentWithMission = {
   id: string;
@@ -106,7 +106,12 @@ export const missionsService = {
   },
 
   // Mettre à jour une mission
-  async updateMission(missionId: string, updates: TableUpdate<'missions'>) {
+  //
+  // Le type est volontairement plus étroit que `TableUpdate<'missions'>` : il
+  // ne décrit que les colonnes que la base accorde au client (voir
+  // `MissionUpdatableFields`). `status` passe par `publishMission` /
+  // `cancelMission`, et `client_id` n'est pas modifiable.
+  async updateMission(missionId: string, updates: MissionUpdatableFields) {
     const { data, error } = await supabase
       .from('missions')
       .update(updates)
@@ -223,7 +228,20 @@ export const missionsService = {
   },
 
   // Créer une affectation
-  async createAssignment(assignment: TableInsert<'mission_assignments'>) {
+  //
+  // Le type est restreint de la même façon que `updateMission` : la migration
+  // `20260925000600` n'accorde que `mission_id`, `agent_id`, `company_id` et
+  // `proposed_rate`, et une affectation doit démarrer à `pending`. Un client ne
+  // doit pas pouvoir s'écrire `accepted`.
+  //
+  // `agent_id` et `company_id` restent facultatifs ici, et c'est volontaire :
+  // la contrainte `mission_assignments_target_check` impose
+  // `num_nonnulls(agent_id, company_id) = 1`, donc exactement UNE des deux
+  // colonnes est renseignée. Les rendre toutes deux obligatoires dans le type
+  // ferait rejeter à la compilation la forme la plus courante de l'affectation.
+  async createAssignment(
+    assignment: Omit<TableInsert<'mission_assignments'>, 'status'>,
+  ) {
     const { data, error } = await supabase
       .from('mission_assignments')
       .insert(assignment)

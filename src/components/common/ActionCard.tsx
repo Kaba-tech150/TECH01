@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface ActionCardProps {
   title: string;
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.displayBold,
     color: COLORS.text,
     marginBottom: 2,
   },
@@ -85,6 +85,6 @@ const styles = StyleSheet.create({
   arrow: {
     fontSize: 20,
     color: COLORS.textSecondary,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.bold,
   },
 });

@@ -50,13 +50,27 @@ with checks(controle, valeur, statut) as (
              and not exists (select 1 from pg_policy p where p.polrelid = c.oid)) = 0
            then 'OK' else 'ALERTE' end
 
-  -- 4. Les 32 politiques RLS + celle d affectation ajoutee en 00600
+  -- 4. Nombre de politiques RLS sur le schema public.
+  --
+  -- ATTENTION A LA LECTURE DU RESULTAT
+  --
+  -- Ce controle a longtemps annonce « 33 attendues » avec un seuil `>= 33`. Ce
+  -- seuil etait trop lax : il laissait passer un ECART sans le dire. La chaine
+  -- definit 38 politiques (32 en 00300, 1 en 00600, 1 en 00700, 4 en 01100) ;
+  -- la base en comptait 37, et le controle affichait « OK » malgre tout.
+  --
+  -- L'ecart valait exactement la politique d'insertion de `mission_assignments`,
+  -- celle que le `DROP TABLE ... CASCADE` de 000001_reset_all.sql avait
+  -- emportee. Le controle 12 la voyait bien, mais le bilan global, lui,
+  -- restait vert : c'est exactement le faux vert que ce fichier doit empecher.
+  --
+  -- Le seuil est donc porte a 38, et l'ecart est nomme explicitement.
   union all
-  select '4. Politiques RLS (33 attendues)',
+  select '4. Politiques RLS (38 attendues)',
          (select count(*)::text from pg_policy p join pg_class c on c.oid = p.polrelid
            join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public'),
          case when (select count(*) from pg_policy p join pg_class c on c.oid = p.polrelid
-           join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public') >= 33
+           join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public') >= 38
            then 'OK' else 'ALERTE' end
 
   -- 5. Ecriture interdite sur les colonnes sensibles
@@ -232,6 +246,75 @@ with checks(controle, valeur, statut) as (
   select '16. Villes actives (1 minimum)',
          (select count(*)::text from public.villes where active),
          case when (select count(*) from public.villes where active) >= 1
+           then 'OK' else 'ALERTE' end
+
+  -- 17. AUCUNE SONDE DE DIAGNOSTIC dans le schema public.
+  --
+  -- `public.diagnostic_rls()` a ete installee temporairement pour mesurer
+  -- `auth.uid()` dans le role `authenticated` (migration 20260926001300), puis
+  -- retiree par la migration 20260926001500.
+  --
+  -- Elle ne donne acces a aucune donnee utilisateur, seulement a des
+  -- metadonnees de catalogue. Mais elle DECRIT la politique RLS de `missions` et
+  -- les droits accordes : c'est une cartographie offerte a quiconque est
+  -- authentifie, et elle n'a rien a faire dans un code livre.
+  --
+  -- Ce controle a ete ajoute le 2026-09-27 apres avoir constate que la fonction
+  -- etait TOUJOURS exposee en production, alors que `check:supabase` annonçait
+  -- « conforme ». Le script ne cherchait que les 8 fonctions de transition, et
+  -- ignorait tout ce qui n'en faisait pas partie.
+  union all
+  select '17. Sonde de diagnostic absente (attendu 0)',
+         (select count(*)::text from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname like 'diagnostic%'),
+         case when (select count(*) from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public' and p.proname like 'diagnostic%') = 0
+           then 'OK' else 'ALERTE' end
+
+  -- 18. missions.client_id porte un DEFAULT derive du jeton.
+  --
+  -- C'est le CORRECTIF de P1 (migration 20260926001400), et c'est le controle le
+  -- plus important de ce fichier pour le prochain test fonctionnel.
+  --
+  -- Rappel du defaut encountere : l'insertion d'une mission echouait avec
+  -- « new row violates row-level security policy for table "missions" » alors
+  -- que TOUTES les conditions de la clause WITH CHECK etaient verifiees vraies.
+  -- La base etait saine : le defaut etait dans l'emission de la requete.
+  --
+  -- Le correctif inverse la responsabilite : la colonne prend `auth.uid()` comme
+  -- valeur par defaut, et le role `authenticated` perd le droit d'ecrire cette
+  -- colonne. Le serveur ecrit l'identite, le client ne peut plus le forger.
+  --
+  -- SANS CE CONTROLE, rien ne signalait que le correctif etait applique ou non :
+  -- la verification s'arretait au controle 12, qui ne parle pas de `missions`.
+  union all
+  select '18. missions.client_id : defaut auth.uid() pose',
+         (select coalesce(column_default, 'AUCUN') from information_schema.columns
+           where table_schema = 'public' and table_name = 'missions'
+             and column_name = 'client_id'),
+         case when (select column_default from information_schema.columns
+           where table_schema = 'public' and table_name = 'missions'
+             and column_name = 'client_id') like '%auth.uid()%'
+           then 'OK' else 'ALERTE' end
+
+  -- 19. missions.client_id : le client ne doit plus pouvoir ecrire cette colonne.
+  --
+  -- Controle JUMELE du 18, et il compte autant que lui. Un DEFAULT sans REVOKE
+  -- n'accomplit rien : le client pourrait toujours envoyer un `client_id` forge,
+  -- et le defaut ne s'appliquerait que s'il l'omet. C'est le REVOKE qui fait de
+  -- l'inversion de responsabilite une garantie, et non une convenance.
+  union all
+  select '19. missions.client_id : ecriture retiree au client (attendu 0)',
+         (select count(*)::text from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'missions'
+             and column_name = 'client_id' and grantee = 'authenticated'
+             and privilege_type in ('INSERT','UPDATE','ALL')),
+         case when (select count(*) from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'missions'
+             and column_name = 'client_id' and grantee = 'authenticated'
+             and privilege_type in ('INSERT','UPDATE','ALL')) = 0
            then 'OK' else 'ALERTE' end
 )
 

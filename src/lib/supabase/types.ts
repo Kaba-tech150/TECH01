@@ -287,7 +287,16 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          client_id: string;
+          /**
+           * Facultatif : la base applique la valeur par défaut
+           * `(select auth.uid())`, posée par la migration
+           * `20260926001400_mission_client_id_default.sql`.
+           *
+           * Le rôle `authenticated` n'a plus le droit d'écrire cette colonne
+           * (`revoke insert (client_id)`) : la fournir ferait échouer
+           * l'insertion. L'identité du client vient donc exclusivement du jeton.
+           */
+          client_id?: string;
           title: string;
           description?: string | null;
           address: string;

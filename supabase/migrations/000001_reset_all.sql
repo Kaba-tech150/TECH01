@@ -28,6 +28,27 @@
 --
 -- APRÈS CE FICHIER : relancer les migrations dans l'ordre, en commençant par
 -- 20260925000100_initial_schema.sql. Voir RECONSTRUCTION_BASE.md.
+--
+-- ⚠️ PIÈGE DOCUMENTÉ LE 2026-09-26 — L'ORDRE D'EXÉCUTION COMPTE
+--
+-- Ce fichier fait `drop table ... cascade` : il supprime les politiques RLS ET
+-- les droits au niveau table de tout ce qu'il efface.
+--
+-- Il a été exécuté après 20260925000600 sur la base de production. Résultat :
+-- la politique "Mission owners can create assignments" a disparu, alors que le
+-- helper private.can_assign_mission créé par le MÊME fichier, dans la MÊME
+-- transaction, a survécu — car le corps d'une fonction SQL n'est pas une
+-- dépendance suivie par PostgreSQL. Le contrôle 12 de VERIFICATION_RAPIDE.sql
+-- s'est alors mis en ALERTE, et le parcours d'affectation de mission est
+-- devenu impossible. Corrigé par 20260926001200_restore_assignment_insert.sql.
+--
+-- RÈGLE : ce fichier s'exécute UNE FOIS, tout en PREMIER, sur une base vide.
+-- Jamais en cours de vie, jamais après une migration de sécurité. Pour corriger
+-- le schéma en production, écrire une nouvelle migration idempotente.
+--
+-- ⚠️ APRÈS CE FICHIER, RELANCER OBLIGATOIREMENT TOUTE LA CHAÎNE DE MIGRATIONS
+-- 20260925000100 → 20260926001200, dans l'ordre. En sauter une, c'est
+-- reproduire exactement le défaut décrit ci-dessus.
 -- =============================================================================
 
 begin;

@@ -1,5 +1,19 @@
 # GUIDE D'APPLICATION DES MIGRATIONS — SECU GUARD
 
+> ## ⛔ DOCUMENT PÉRIMÉ — NE PAS SUIVRE
+>
+> **Ce fichier décrit un état du projet antérieur au 2026-09-27.** Il ne
+> connaît pas la table `villes`, ni les migrations `01200` à `01500`, et son
+> ordre d'exécution est faux.
+>
+> ➡️ **Suivez [`MIGRATIONS_EN_ATTENTE.md`](MIGRATIONS_EN_ATTENTE.md)**, qui
+> est à jour.
+>
+> Vous ne conservez ce document que pour l'historique : la méthode
+> d'explication y reste valable.
+
+---
+
 > **Ce document s'adresse à vous, pas à un développeur.**
 > Il ne suppose aucune compétence SQL. Chaque étape indique **où cliquer**, **quoi coller**
 > et **ce que vous devez voir** pour savoir que ça a fonctionné.

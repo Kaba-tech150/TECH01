@@ -98,6 +98,23 @@ const RPCS = [
   { name: 'complete_assignment', parameter: 'target_assignment_id' },
 ];
 
+// Fonctions de diagnostic qui n'ont AUCUNE raison d'exister en production.
+//
+// `diagnostic_rls` a ete installee temporairement pour mesurer `auth.uid()`
+// dans le role `authenticated` (migration 20260926001300). Elle est retiree
+// par la migration 20260926001500.
+//
+// Elle ne donne acces a aucune donnee utilisateur, uniquement a des
+// metadonnees de catalogue. Mais elle DECRIT la politique RLS et les droits
+// accordes a quiconque est authentifie : c'est une cartographie offerte a un
+// attaquant, et elle n'a rien a faire dans un code livre.
+//
+// Ce controle existe parce que le 2026-09-27 la fonction etait TOUJOURS
+// exposee en production, alors que `check:supabase` annonçait « conforme ».
+// C'etait un faux vert : le script ne cherchait que les 8 fonctions de
+// transition, et ignorait tout ce qui ne fait pas partie de cette liste.
+const FONCTIONS_A_INTERDIRE = ['diagnostic_rls'];
+
 const host = new URL(supabaseUrl).host;
 console.log('Projet Supabase :', host);
 console.log('Lecture seule : aucune donnee ne sera ecrite.\n');
@@ -262,6 +279,59 @@ const checkRpc = async ({ name: fn, parameter }) => {
   console.log(`  ALERTE   rpc ${fn.padEnd(22)} HTTP ${response.status} - ${message.slice(0, 80)}`);
 };
 
+/**
+ * Verifie qu'aucune fonction de diagnostic ne subsiste dans le schema public.
+ *
+ * L'appel est volontairement SANS corps : PostgREST resout la fonction par
+ * signature, donc une fonction sans parametre est trouvee sans argument. On lit
+ * la reponse, on ne l'execute pas dans un but de donnees.
+ *
+ * LECTURE DES REPONSES — c'est la distinction qui compte :
+ *   404 + PGRST202            OK      : la fonction n'existe pas
+ *   401/403 + 42501 "function" ALERTE : ELLE EXISTE, l'API refuse seulement
+ *                                      le role anon
+ *
+ * Une reponse 42501 sur une fonction nommee ne prouve donc PAS que la base
+ * est saine : elle prouve que la fonction est la, et que seul `anon` est
+ * refuse. Or le role `authenticated` y a acces.
+ */
+const checkFonctionInterdite = async (fn) => {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  });
+  const body = await response.text();
+  const { code, message } = parsePostgrestError(body);
+
+  // La fonction n'existe pas : c'est l'etat attendu et souhaite.
+  if (response.status === 404 && code === 'PGRST202') {
+    console.log(`  OK       ${fn.padEnd(22)} absente du catalogue`);
+    return;
+  }
+
+  // Elle existe. La raison est precisee, car « elle existe » ne suffirait pas a
+  // expliquer quoi que ce soit au commanditaire.
+  record(
+    fn,
+    'FONCTION DE DIAGNOSTIC EXPOSEE : elle decrit la politique RLS et les droits de la base',
+  );
+  console.log(
+    `  ALERTE   ${fn.padEnd(22)} EXPOSEE en base (HTTP ${response.status}) - ` +
+      'fonction de diagnostic a supprimer',
+  );
+  if (code) {
+    console.log(`           code serveur : ${code}`);
+  }
+  if (message) {
+    console.log(`           message      : ${message.slice(0, 120)}`);
+  }
+};
+
 const run = async () => {
   console.log('--- Authentification de la cle anon ---');
   await checkApiKey();
@@ -277,6 +347,11 @@ const run = async () => {
     await checkRpc(fn);
   }
 
+  console.log('\n--- Fonctions de diagnostic (doivent etre absentes) ---');
+  for (const fn of FONCTIONS_A_INTERDIRE) {
+    await checkFonctionInterdite(fn);
+  }
+
   const schemaBlocked = anomalies.some((a) => a.message.includes('schema public'));
 
   console.log('\n============================================================');
@@ -286,7 +361,8 @@ const run = async () => {
   if (anomalies.length === 0) {
     console.log('RESULTAT : conforme.');
     console.log('Les tables existent, la lecture sans session est refusee,');
-    console.log('et les 8 fonctions de transition sont presentes.');
+    console.log('les 8 fonctions de transition sont presentes,');
+    console.log('et aucune fonction de diagnostic ne subsiste.');
     console.log('');
     console.log('Relisez malgre tout le controle 2 de');
     console.log('supabase/verification/VERIFICATION_POST_MIGRATION.sql :');
@@ -328,6 +404,30 @@ const run = async () => {
     for (const a of other) {
       console.log(`  - ${a.target} : ${a.message}`);
     }
+    console.log('');
+  }
+
+  // Diagnostic Actionable : une anomalie de fuite ne se corrige pas toute seule.
+  // Le script doit dire QUOI coller, sinon le commanditaire fait quoi que ce soit.
+  const diagnosticExpose = anomalies.filter((a) =>
+    a.message.startsWith('FONCTION DE DIAGNOSTIC EXPOSEE'),
+  );
+
+  if (diagnosticExpose.length > 0) {
+    console.log('============================================================');
+    console.log('ACTION REQUISE : SONDE DE DIAGNOSTIC EXPOSEE');
+    console.log('============================================================');
+    console.log('');
+    console.log('Une fonction de diagnostic vit dans le schema public.');
+    console.log("Elle ne contient aucune donnee utilisateur, mais elle DECRIT");
+    console.log('la politique RLS et les droits de la base. Elle ne doit pas');
+    console.log('survivre a la livraison.');
+    console.log('');
+    console.log('Dans le SQL Editor du projet :');
+    console.log('  1. Ouvrir  supabase\\migrations\\20260926001500_diagnostic_drop.sql');
+    console.log('  2. Ctrl+A puis Ctrl+V dans une nouvelle requete, puis Run');
+    console.log('  Attendu : "Success. No rows returned"');
+    console.log('  3. Relancer : npm run check:supabase');
     console.log('');
   }
 

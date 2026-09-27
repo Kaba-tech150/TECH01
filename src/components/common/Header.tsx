@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface HeaderProps {
   onLoginPress?: () => void;
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   logoIconText: {
     color: COLORS.background,
     fontSize: 24,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
   },
 
   logoTextContainer: {
@@ -80,14 +80,14 @@ const styles = StyleSheet.create({
 
   logoText: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     color: COLORS.text,
     letterSpacing: -0.5,
   },
 
   logoSubtitle: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.normal,
+    fontFamily: FONT_FAMILIES.regular,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 
   loginText: {
     color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontFamily: FONT_FAMILIES.semibold,
     fontSize: FONT_SIZES.md,
   },
 });

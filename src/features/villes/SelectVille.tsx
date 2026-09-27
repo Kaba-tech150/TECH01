@@ -1,5 +1,5 @@
-import { COLORS, FONT_SIZES, SPACING } from '@/constants';
-import { filtrerVilles, useVilles } from '@/features/villes';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
+import { filtrerVilles, useVilles } from './useVilles';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -32,6 +32,16 @@ interface SelectVilleProps {
  * Une liste vide est un cas normal, pas une erreur : elle signifie qu'aucune
  * ville n'est encore ouverte. L'interface le dit au lieu d'afficher une zone
  * vide qui semblerait cassée.
+ *
+ * IMPORT RELATIF OBLIGATOIRE
+ *
+ * `useVilles` et `filtrerVilles` sont importés depuis `./useVilles`, et NON
+ * depuis `./index`. Ce dossier est un point d'entrée public du domaine, et il
+ * réexporte ce composant : l'importer depuis là produirait un cycle
+ * (`index` → `SelectVille` → `index`), que Metro signalait à chaque bundling.
+ * Les autres fichiers du domaine continuent d'importer `@/features/villes`,
+ * qui est correct — seul ce fichier, exporté par le baril, doit importer
+ * directement.
  */
 export function SelectVille({ value, onChange, label, erreur }: SelectVilleProps) {
   const [ouvert, setOuvert] = useState(false);
@@ -134,8 +144,8 @@ export function SelectVille({ value, onChange, label, erreur }: SelectVilleProps
 const styles = StyleSheet.create({
   group: { gap: 4 },
   label: {
+    fontFamily: FONT_FAMILIES.semibold,
     fontSize: FONT_SIZES.md,
-    fontWeight: '600',
     color: COLORS.text,
   },
   champ: {
@@ -157,7 +167,7 @@ const styles = StyleSheet.create({
   erreur: { color: COLORS.error, fontSize: FONT_SIZES.sm },
   voile: {
     flex: 1,
-    backgroundColor: 'rgba(17, 24, 39, 0.5)',
+    backgroundColor: COLORS.scrim,
     justifyContent: 'flex-end',
   },
   panneau: {
@@ -175,7 +185,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
-  titre: { fontSize: FONT_SIZES.xl, fontWeight: '700', color: COLORS.text },
+  titre: { fontFamily: FONT_FAMILIES.displayBold, fontSize: FONT_SIZES.xl, color: COLORS.text },
   fermer: { fontSize: 20, color: COLORS.textSecondary, padding: SPACING.xs },
   recherche: {
     marginHorizontal: SPACING.lg,
@@ -203,6 +213,6 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
   },
   ligneActive: { backgroundColor: COLORS.backgroundSecondary },
-  nom: { fontSize: FONT_SIZES.lg, color: COLORS.text, fontWeight: '600' },
+  nom: { fontFamily: FONT_FAMILIES.semibold, fontSize: FONT_SIZES.lg, color: COLORS.text },
   detail: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, marginTop: 2 },
 });

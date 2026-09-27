@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import { Button } from '@/components/ui';
 
 interface HeroProps {
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   statusText: {
     color: COLORS.success,
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontFamily: FONT_FAMILIES.semibold,
   },
 
   heroTitle: {
     fontSize: FONT_SIZES.huge,
     lineHeight: 45,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
 
   statValue: {
     fontSize: FONT_SIZES.xxxl,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     color: COLORS.primary,
     marginBottom: 4,
   },
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    fontWeight: FONT_WEIGHTS.medium,
+    fontFamily: FONT_FAMILIES.medium,
   },
 
   statDivider: {

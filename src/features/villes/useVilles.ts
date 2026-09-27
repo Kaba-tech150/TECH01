@@ -15,7 +15,7 @@ export const VILLES_KEY = ['villes', 'actives'] as const;
 export function useVilles() {
   return useQuery({
     queryKey: VILLES_KEY,
-    queryFn: () => villesService.getActiveCities(),
+    queryFn: () => villesService.listCities(),
     // Une heure : au-delà, la liste risquerait de masquer une ville
     // récemment ouverte par l'administration.
     staleTime: 60 * 60 * 1000,

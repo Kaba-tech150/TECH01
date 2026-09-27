@@ -1,3 +1,12 @@
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_FAMILIES,
+  FONT_SIZES,
+  HAIRLINE_CYAN_SOFT,
+  SHADOWS,
+  SPACING,
+} from '@/constants';
 import { useAuthContext } from '@/context/AuthContext';
 import { Image } from 'expo-image';
 import {
@@ -9,57 +18,26 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /* =========================================================
-   COULEURS
+   JETONS DE STYLE
+   =========================================================
+
+   Cet en-tête consume désormais les tokens partagés de
+   `src/constants`, comme toutes les primitives du design system.
+
+   Il redéfinissait auparavant ses propres couleurs, polices,
+   tailles et espacements, avec des valeurs en désaccord avec
+   la maquette : fond gris froid au lieu de la surface Material,
+   bleu `#0066FF` au lieu du teal de marque, et surtout des
+   polices forcées à `'System'`, qui écrasaient les familles
+   Plus Jakarta Sans / Manrope chargées au démarrage. D'où un
+   en-tête visuellement étranger au reste de l'application.
+
+   Le mappage retenu pour les écarts :
+     - fond      #eff0f5 -> COLORS.background          (#FAFAFF)
+     - marque    #0066FF -> COLORS.primary             (#00677F)
+     - surfaces  #E8F0FF -> COLORS.surfaceContainerHigh(#E3E7FF)
+     - polices   System  -> FONT_FAMILIES (titles/texte)
    ========================================================= */
-
-const COLORS = {
-  background: '#eff0f5',
-  text: '#0F172A',
-  textSecondary: '#64748B',
-  primary: '#0066FF',
-  cyan: '#00D2FF',
-  error: '#BA1A1A',
-  onWhite: '#FFFFFF',
-  surfaceContainerHigh: '#E8F0FF',
-};
-
-/* =========================================================
-   TYPOGRAPHIE
-   ========================================================= */
-
-const FONT_FAMILIES = {
-  displayBold: 'System',
-  bold: 'System',
-  medium: 'System',
-};
-
-/* =========================================================
-   TAILLES
-   ========================================================= */
-
-const FONT_SIZES = {
-  xs: 11,
-  md: 16,
-  xl: 20,
-};
-
-/* =========================================================
-   ESPACEMENTS
-   ========================================================= */
-
-const SPACING = {
-  sm: 8,
-  lg: 16,
-};
-
-/* =========================================================
-   BORDER RADIUS
-   ========================================================= */
-
-const BORDER_RADIUS = {
-  sm: 6,
-  full: 999,
-};
 
 /* =========================================================
    DESCENTE DE L'EN-TÊTE
@@ -212,18 +190,9 @@ const styles = StyleSheet.create({
 
     borderBottomWidth: 1,
 
-    borderBottomColor:
-      'rgba(0, 210, 255, 0.12)',
+    borderBottomColor: HAIRLINE_CYAN_SOFT,
 
-    elevation: 4,
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    ...SHADOWS.header,
   },
 
   /* -------------------------------------------------------
@@ -384,8 +353,7 @@ const styles = StyleSheet.create({
 
     borderRadius: BORDER_RADIUS.sm,
 
-    backgroundColor:
-      'rgba(186, 26, 26, 0.08)',
+    backgroundColor: COLORS.errorSoft,
   },
 
   sosText: {

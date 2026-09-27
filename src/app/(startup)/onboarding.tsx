@@ -1,6 +1,6 @@
 import { completeOnboarding } from '@/lib/storage';
 import { Button, Typography } from '@/components/ui';
-import { BORDER_RADIUS, COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   content: { flexGrow: 1, padding: SPACING.xl, justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  skipText: { color: COLORS.primary, fontSize: FONT_SIZES.sm, fontWeight: FONT_WEIGHTS.semibold },
+  skipText: { color: COLORS.primary, fontSize: FONT_SIZES.sm, fontFamily: FONT_FAMILIES.semibold },
   illustration: { alignItems: 'center', marginVertical: SPACING.xxxl },
   icon: { fontSize: 96 },
   copy: { alignItems: 'center' },

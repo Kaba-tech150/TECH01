@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { useAuthContext } from '@/context/AuthContext';
 import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
 import { missionsService } from '@/services';
 import type { CreateMissionInput } from './missionSchema';
@@ -39,14 +38,25 @@ export function useClientMissions() {
  */
 export function useCreateMission() {
   const queryClient = useQueryClient();
-  const { user } = useAuthContext();
 
   return useMutation({
     mutationFn: async (input: CreateMissionInput) => {
-      if (!user) {
-        throw new Error('Vous devez être connecté pour créer une mission.');
-      }
-
+      /*
+       * `client_id` N'EST PAS ENVOYÉ.
+       *
+       * La colonne porte désormais la valeur par défaut `(select auth.uid())`,
+       * posée par la migration `20260926001400_mission_client_id_default.sql` :
+       * le serveur l'écrit à partir du jeton, et le rôle `authenticated` n'a
+       * plus le droit d'écrire cette colonne.
+       *
+       * C'est une inversion de responsabilité délibérée. L'application
+       * envoyait l'identifiant, et la RLS devait vérifier qu'il était correct
+       * — ce qui bloquait la création d'une mission. Une donnée d'identité ne
+       * doit pas être fournie par le client alors qu'elle est disponible, et
+       * plus fiable, dans le jeton. Le rôle `authenticated` peut donc créer une
+       * mission pour lui-même, et pour personne d'autre : c'est désormais
+       * garanti par l'absence de droit, pas seulement par la politique.
+       */
       return missionsService.createMission({
         title: input.title,
         description: input.description,
@@ -58,7 +68,6 @@ export function useCreateMission() {
         agent_count: input.agentCount,
         budget: input.budget,
         special_requirements: input.specialRequirements,
-        client_id: user.id,
       });
     },
     onSuccess: () => {

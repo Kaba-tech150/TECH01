@@ -130,18 +130,20 @@ export function toUserFacingError(
     };
   }
 
-  // Le trigger de création de profil a échoué côté serveur.
+  // Échec du trigger de création de profil, À L'INSCRIPTION UNIQUEMENT.
   //
-  // C'est le symptôme observé tant que la migration 20260925000700 n'est pas
-  // appliquée : `force row level security` soumet les triggers `SECURITY
-  // DEFINER` aux politiques, qui n'autorisent pas l'insertion. Supabase masque
-  // alors la cause derrière ce message générique, ce qui rend le diagnostic
-  // impossible depuis l'interface seule.
-  if (
-    lowered.includes('database error saving new user') ||
-    lowered.includes('row-level security') ||
-    lowered.includes('violates row level security')
-  ) {
+  // Symptôme historique : `force row level security` soumet les triggers
+  // `SECURITY DEFINER` aux politiques, qui n'autorisent pas l'insertion, et
+  // l'inscription entière est annulée. Supabase masque alors la cause derrière
+  // ce message.
+  //
+  // On ne reconnaît QUE le libellé propre à l'inscription. Une violation RLS
+  // portant le nom d'une table ne doit surtout pas être traduite ici : ce
+  // message affirmait à tort « la création de votre profil a échoué » alors
+  // que l'utilisateur venait, par exemple, de créer une mission. Indiquer une
+  // autre fonctionnalité que celle en cours envoie l'utilisateur débugger le
+  // mauvais écran.
+  if (lowered.includes('database error saving new user')) {
     return {
       message:
         'La création de votre profil a échoué côté serveur. Réessayez dans quelques instants.',
@@ -161,9 +163,21 @@ export function toUserFacingError(
     };
   }
 
-  if (lowered.includes('row-level security') || lowered.includes('failed to download')) {
+  // Violation RLS sur une opération de données (mission, document, avis,
+  // message, portefeuille, affectation).
+  //
+  // Le serveur refuse l'écriture ou la lecture alors que l'utilisateur est
+  // authentifié et légitime. Deux causes distinctes, un même symptôme : soit
+  // ses droits ne couvrent pas cette action, soit l'interface est en décalage
+  // avec le schéma. Le message reste donc neutre — il ne nomme ni table ni
+  // politique, conformément à la règle de ne rien divulguer du serveur.
+  if (
+    lowered.includes('row-level security') ||
+    lowered.includes('failed to download')
+  ) {
     return {
-      message: 'Vous n’avez pas les droits nécessaires pour accéder à ces données.',
+      message:
+        'Cette action n’a pas pu aboutir : vos droits ne permettent pas cette opération. Réessayez, ou contactez l’assistance si le problème persiste.',
       technical,
       isServiceIssue: false,
     };

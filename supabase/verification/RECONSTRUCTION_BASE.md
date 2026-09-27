@@ -1,5 +1,20 @@
 # RECONSTRUCTION DE LA BASE — SECU GUARD
 
+> ## ⛔ DOCUMENT PÉRIMÉ — NE PAS SUIVRE
+>
+> **La liste des 9 fichiers de ce document date du 2026-09-26 et est
+> incomplète.** Elle ne mentionne ni `20260925001100_villes.sql`, ni les
+> migrations `01200` à `01500` du 2026-09-27.
+>
+> ➡️ **Suivez [`MIGRATIONS_EN_ATTENTE.md`](MIGRATIONS_EN_ATTENTE.md)**, qui
+> est à jour.
+>
+> Ce document reste valable comme **procédure générale** (où cliquer, comment
+> coller, comment rafraîchir le cache PostgREST), et comme explication de
+> pourquoi la table `profiles` devait être recréée.
+
+---
+
 **Ce document remplace l'ordre des étapes précédent. Il est daté du 2026-09-26.**
 
 ---

@@ -1,4 +1,4 @@
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import { Controller, type Control, type FieldValues, type Path } from 'react-hook-form';
 import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontFamily: FONT_FAMILIES.semibold,
     color: COLORS.text,
   },
   input: {

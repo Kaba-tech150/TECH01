@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 export function Footer() {
   return (
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
 
   footerText: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     color: COLORS.text,
     marginBottom: 4,
   },
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontFamily: FONT_FAMILIES.semibold,
   },
 
   footerSeparator: {

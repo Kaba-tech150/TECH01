@@ -1,5 +1,5 @@
 import { Button, Card, Typography } from '@/components/ui';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import { completeOnboarding, getSelectedProfile, setSelectedProfile, type PublicProfile } from '@/lib/storage';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   icon: { fontSize: 34 },
   copy: { flex: 1 },
-  optionTitle: { color: COLORS.text, fontSize: FONT_SIZES.lg, fontWeight: FONT_WEIGHTS.bold },
+  optionTitle: { color: COLORS.text, fontSize: FONT_SIZES.lg, fontFamily: FONT_FAMILIES.displayBold },
   selectedText: { color: COLORS.primary },
   description: { color: COLORS.textSecondary, fontSize: FONT_SIZES.sm, marginTop: SPACING.xs },
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface StatCardProps {
   title: string;
@@ -69,13 +69,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: FONT_WEIGHTS.medium,
+    fontFamily: FONT_FAMILIES.medium,
     marginBottom: 4,
   },
 
   value: {
     fontSize: FONT_SIZES.xxxl,
-    fontWeight: FONT_WEIGHTS.extrabold,
+    fontFamily: FONT_FAMILIES.display,
     marginBottom: 2,
   },
 

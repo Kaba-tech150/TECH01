@@ -1,6 +1,6 @@
 import { type PublicProfile } from '@/lib/storage';
 import { Button, Typography } from '@/components/ui';
-import { BORDER_RADIUS, COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import { signUp } from '@/lib/supabase/auth';
 import { toUserFacingError, logTechnicalError } from '@/lib/supabase/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontFamily: FONT_FAMILIES.semibold,
     color: COLORS.text,
     marginBottom: 4,
   },
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.bold,
     color: COLORS.text,
     marginBottom: 2,
   },
@@ -313,6 +313,6 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: FONT_SIZES.md,
     color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontFamily: FONT_FAMILIES.bold,
   },
 });
