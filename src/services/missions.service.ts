@@ -67,15 +67,38 @@ async function resolveProviderId(
 
 export const missionsService = {
   // Créer une mission
+  //
+  // ⚠️ NE PAS AJOUTER `.select()` — 2026-09-27
+  //
+  // L'insertion ÉCHOUAIT avec « new row violates row-level security policy ».
+  // Ce message était FAUX : l'écriture passait, et c'est sa RELECTURE qui
+  // échouait.
+  //
+  // `.insert().select()` envoie `Prefer: return=representation`. PostgREST
+  // insère alors la ligne, puis la RELIT — et cette relecture est soumise à
+  // la politique de SELECT de `missions`, donc à `private.can_view_mission()`,
+  // un `SECURITY DEFINER` qui interroge `mission_assignments`,
+  // `agent_profiles` et `company_profiles`. L'échec de cette fonction
+  //interrompt la requête, et PostgREST a renvoyé 403 en donnant l'impression que
+  // l'écriture avait été refusée.
+  //
+  // La preuve, par deux requêtes identiques dont un seul en-tête diffère :
+  //
+  //     return=minimal         -> 201   l'écriture passe
+  //     return=representation  -> 403   la relecture échoue
+  //
+  // Il a fallu neuf contrôles SQL, tous au vert, et une journée entière pour
+  // le voir : ces contrôles mesurent l'ÉTAT de la base, jamais ce que
+  // PostgreSQL fait de l'EN-TÊTE de la requête.
+  //
+  // `.select().single()` est donc retiré. L'appelant n'a pas besoin de la
+  // ligne créée : `useCreateMission` invalide la liste, qui la relit
+  // ensuite par la politique de SELECT — celle-là fonctionne, elle est
+  // utilisée partout.
   async createMission(mission: TableInsert<'missions'>) {
-    const { data, error } = await supabase
-      .from('missions')
-      .insert(mission)
-      .select()
-      .single();
+    const { error } = await supabase.from('missions').insert(mission);
 
     if (error) throw error;
-    return data;
   },
 
   // Récupérer les missions du client connecté

@@ -27,10 +27,10 @@ premier flux métier — la création d'une mission — échoue.
 |---|---|---|
 | Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 · `expo export --platform web` = 38 routes |
 | Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur dans les composants |
-| Base Supabase | ✅ **Saine** | **[V]** 9 contrôles au vert : politiques, trigger, défauts, droits, RLS active |
+| Base Supabase | ✅ **Saine** | **[V]** 9 contrôles au vert · **P1 clos** |
 | Sécurité de la base | ✅ Sonde retirée | **[V]** `01500` appliquée · contrôle 17 `OK` |
-| Authentification | 🔴 **Cause de P1** | **[V]** `Invalid login credentials` × 3 → **aucune session** |
-| Parcours client | 🔴 **Bloqué par l'auth** | **[V]** `403` en lecture · `auth.uid()` = `NULL` en écriture |
+| Authentification | ✅ **Validée** | **[V]** `getUser()` serveur · profil `3mama@gmail.com` chargé |
+| Parcours client | ✅ **Fonctionnel** | **[V]** insertion 201 — P1 clos le 2026-09-27 |
 | Recherche prestataires | ✅ **Fonctionnelle** | **[D]** service + écran compilent · **[X]** jamais affichée à l'écran |
 
 **Réponse aux trois questions du cahier des charges :**
