@@ -14,6 +14,7 @@ import {
   versChargeAgent,
   type AgentProfileValues,
 } from '@/features/prestataires';
+import { supabase } from '@/lib/supabase';
 import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
 
 /**
@@ -72,6 +73,60 @@ export default function AgentProfileScreen() {
       certificationNumber: fiche.certificationNumber,
     });
   }, [fiche, reset]);
+
+  /*
+   * SONDE TEMPORAIRE — 2026-09-27. À RETIRER.
+   *
+   * Échec : `permission denied for table agent_profiles`, sur
+   *
+   *     GET /rest/v1/agent_profiles?id=eq.<uuid>  ->  403
+   *
+   * Le filtre est `id=eq.` et non `profile_id=eq.` : c'est donc
+   * `updateAgentProfile`, qui fait `.eq('id', agentId)` — et non la lecture
+   * initiale. La fiche EXISTE déjà : elle a été créée, et la modification
+   * échoue.
+   *
+   * POINT DE POSTGREST, SOURCE DE LA CONFUSION
+   *
+   * Un UPDATE exige les DEUX droits : `update` sur les colonnes modifiées ET
+   * `select` sur la table. PostgREST construit la requête sur un CTE qui
+   * relit la ligne, et un SELECT manquant fait échouer le PATCH entier avec
+   * le message d'un INSERT refusé — la même signature, pas la même cause.
+   *
+   * On mesure donc la lecture SEULE, sans rien écrire : si elle répond 200, le
+   * SELECT est présent et le défaut est ailleurs ; si elle répond 403, c'est
+   * lui, et `20260926001800` le corrige en réaccordant le SELECT.
+   */
+  useEffect(() => {
+    if (!user) return;
+
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    const apikey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    if (!base || !apikey) return;
+
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      const jeton = data.session?.access_token;
+      if (!jeton) return;
+
+      const lire = async (libelle: string, url: string) => {
+        try {
+          const r = await fetch(base + url, {
+            headers: { apikey, Authorization: `Bearer ${jeton}` },
+          });
+          console.warn(`[SecuGuard][sonde] ${libelle} = ${r.status}`);
+        } catch {
+          console.warn(`[SecuGuard][sonde] ${libelle} = ERREUR`);
+        }
+      };
+
+      await lire('agent_profiles_select', '/rest/v1/agent_profiles?select=id&limit=1');
+      await lire(
+        'agent_profiles_avec_profil',
+        '/rest/v1/agent_profiles?select=id,profiles!inner(full_name)',
+      );
+    })();
+  }, [user]);
 
   const soumettre = async (valeurs: AgentProfileValues) => {
     if (!user) return;
