@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { useAuthContext } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
 import { missionsService } from '@/services';
 import type { CreateMissionInput } from './missionSchema';
@@ -65,21 +65,46 @@ export function useClientMissions() {
  */
 export function useCreateMission() {
   const queryClient = useQueryClient();
-  const { user } = useAuthContext();
 
   return useMutation({
     mutationFn: async (input: CreateMissionInput) => {
       /*
-       * Sans session, l'insertion n'a aucune chance : le trigger refuserait
-       * l'écriture faute de jeton. Mieux vaut un message clair ici qu'un
-       * « vos droits ne permettent pas cette opération » trompeur.
+       * LECTURE DE LA SESSION, PAS DU CONTEXTE — c'est le point de ce garde-fou.
+       *
+       * Incident du 2026-09-27 : trois échecs de connexion
+       * (`Invalid login credentials`) suivis d'une tentative de création, qui
+       * a échoué sur « new row violates row-level security policy ». Trois
+       * messages, un seul défaut : AUCUNE session. Le jeton n'était pas envoyé,
+       * donc `auth.uid()` valait `NULL` côté base, donc
+       * `client_id = auth.uid()` était faux, donc la politique refusait la
+       * ligne.
+       *
+       * Le message affiché — « vos droits ne permettent pas cette opération »
+       * — envoyait vers les permissions. C'était le diagnostic exact inverse
+       * du réel. Neuf contrôles base sont alors tous au vert : la base était
+       * saine, et elle l'est toujours.
+       *
+       * `user` du contexte React n'est PAS une source fiable ici : il décrit
+       * l'état au dernier rendu. Après un échec de connexion, il peut être
+       * `null` — ou pire, encore peuplé de la session PRÉCÉDENTE, et
+       * l'interface paraît connectée alors qu'aucun jeton ne part. On
+       * interroge donc la source de vérité.
+       *
+       * `getSession()` est une lecture LOCALE : elle renvoie la session en
+       * cours sans requête réseau, et elle suffit à savoir si un jeton
+       * existe.
        */
-      if (!user) {
-        throw new Error('Session absente : reconnectez-vous pour créer une mission.');
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+
+      if (!session) {
+        throw new Error(
+          'Session absente : reconnectez-vous avant de créer une mission.',
+        );
       }
 
       return missionsService.createMission({
-        client_id: user.id,
+        client_id: session.user.id,
         title: input.title,
         description: input.description,
         address: input.address,

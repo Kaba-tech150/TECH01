@@ -85,9 +85,32 @@ export function toUserFacingError(
   const lowered = technical.toLowerCase();
 
   // Erreurs d'authentification : message déjà compréhensible par l'utilisateur.
+  //
+  // ⚠️ CAS « EMAIL NON CONFIRMÉ » — PIÈGE DÉJÀ OBSERVÉ LE 2026-09-27
+  //
+  // Supabase répond `Invalid login credentials` dans DEUX situations très
+  // différentes :
+  //
+  //   1. le mot de passe est faux ;
+  //   2. le compte existe mais l'adresse n'est pas confirmée.
+  //
+  // Le cas 2 est délibéré : répondre « email non confirmé » révélerait quelles
+  // adresses ont un compte. C'est un bon choix de sécurité, et une très mauvaise
+  // nouvelle pour le diagnostic.
+  //
+  // Conséquence réelle, subie ce jour-là : trois échecs de connexion
+  // affichés « Email ou mot de passe incorrect », alors que le compte venait
+  // d'être créé et que le mot de passe était le bon. Le message a envoyé vers
+  // une faute de frappe, et le vrai réglage — la confirmation d'email — est
+  // resté invisible. Deux heures de perdues.
+  //
+  // On ne peut PAS distinguer les deux cas : l'information n'est pas dans la
+  // réponse. Le message honnête le dit donc, et oriente vers les DEUX causes
+  // réelles au lieu d'en afficher une seule et de masquer l'autre.
   if (code === 'invalid_credentials' || lowered.includes('invalid login credentials')) {
     return {
-      message: 'Email ou mot de passe incorrect.',
+      message:
+        'Connexion impossible. Vérifiez votre mot de passe — et que votre adresse a bien été confirmée si vous venez de vous inscrire.',
       technical,
       isServiceIssue: false,
     };
@@ -166,18 +189,30 @@ export function toUserFacingError(
   // Violation RLS sur une opération de données (mission, document, avis,
   // message, portefeuille, affectation).
   //
-  // Le serveur refuse l'écriture ou la lecture alors que l'utilisateur est
-  // authentifié et légitime. Deux causes distinctes, un même symptôme : soit
-  // ses droits ne couvrent pas cette action, soit l'interface est en décalage
-  // avec le schéma. Le message reste donc neutre — il ne nomme ni table ni
-  // politique, conformément à la règle de ne rien divulguer du serveur.
+  // ⚠️ DEUX CAUSES TRÈS DIFFÉRENTES, UN SEUL SYMPTÔME — 2026-09-27
+  //
+  // 1. L'utilisateur est authentifié, et ses droits ne couvrent pas l'action.
+  // 2. AUCUNE session n'est ouverte : la requête part avec la clé `anon`,
+  //    `auth.uid()` vaut `NULL`, et la clause `client_id = auth.uid()`
+  //    s'évalue à `NULL` — donc fausse. La base refuse alors la ligne pour un
+  //    défaut de droits… alors qu'il n'y en a aucun.
+  //
+  // Le cas 2 a été observé trois fois de suite, et le message ci-dessous
+  // renvoyait l'utilisateur vers ses permissions : le diagnostic exactement
+  // inverse du réel. Neuf contrôles base sont restés au vert pendant ce temps,
+  // parce que la base était — et est toujours — parfaitement saine.
+  //
+  // Le message ne peut pas nommer la table, la politique, ni le rôle. Il peut
+  // en revanche OBLIGER à vérifier la session avant d'aller chercher du côté
+  // des droits : c'est la vérification la moins coûteuse, et celle que
+  // l'utilisateur a omise.
   if (
     lowered.includes('row-level security') ||
     lowered.includes('failed to download')
   ) {
     return {
       message:
-        'Cette action n’a pas pu aboutir : vos droits ne permettent pas cette opération. Réessayez, ou contactez l’assistance si le problème persiste.',
+        'Action refusée par le serveur. Vérifiez d’abord que vous êtes bien connecté — une session fermée produit exactement ce message — puis, si vous l’êtes, signalez l’incident : la configuration des droits sera examinée.',
       technical,
       isServiceIssue: false,
     };
@@ -189,6 +224,24 @@ export function toUserFacingError(
       message: GENERIC_SERVICE_MESSAGE,
       technical,
       isServiceIssue: true,
+    };
+  }
+
+  // Absence de session au moment d'écrire.
+  //
+  // C'est le message le plus important du fichier. L'incident du 2026-09-27
+  // a montré ce que coûte son absence : sans session, l'insertion part quand
+  // même avec la clé `anon`, la base refuse la ligne au motif d'une violation
+  // RLS, et l'interface annonce « vos droits ne permettent pas cette
+  // opération ». L'utilisateur est renvoyé vers ses permissions alors que le
+  // défaut est une session non ouverte — le diagnostic exactement inverse du
+  // réel.
+  if (lowered.includes('session absente')) {
+    return {
+      message:
+        'Votre session a expiré. Reconnectez-vous, puis recréez votre mission.',
+      technical,
+      isServiceIssue: false,
     };
   }
 

@@ -27,11 +27,11 @@ premier flux métier — la création d'une mission — échoue.
 |---|---|---|
 | Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 · `expo export --platform web` = 38 routes |
 | Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur dans les composants |
-| Base Supabase | ⚠️ Conforme **en lecture** | **[V]** `check:supabase` → « conforme » · 13 tables · 8 RPC · sonde de diagnostic **retirée** |
-| Sécurité de la base | ✅ **Sonde retirée** | **[V]** `20260926001500` appliquée le 2026-09-27 · contrôle 17 `OK` |
-| Authentification | 🔴 Non prouvée | **[X]** aucune inscription ni connexion réussie à ce jour |
-| Parcours client | 🔴 **Bloqué** | **[V]** `new row violates row-level security policy for table "missions"` |
-| Parcours agent / société / admin | ⚠️ Écrans vides | **[V]** 10 gestionnaires `onPress={() => {}}` · aucune requête de données |
+| Base Supabase | ✅ **Saine** | **[V]** 9 contrôles au vert : politiques, trigger, défauts, droits, RLS active |
+| Sécurité de la base | ✅ Sonde retirée | **[V]** `01500` appliquée · contrôle 17 `OK` |
+| Authentification | 🔴 **Cause de P1** | **[V]** `Invalid login credentials` × 3 → **aucune session** |
+| Parcours client | 🔴 **Bloqué par l'auth** | **[V]** `403` en lecture · `auth.uid()` = `NULL` en écriture |
+| Recherche prestataires | ⚠️ Service écrit | **[D]** `providers.service.ts` compile, écran non fait |
 
 **Réponse aux trois questions du cahier des charges :**
 
