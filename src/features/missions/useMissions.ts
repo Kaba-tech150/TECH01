@@ -99,34 +99,46 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
    * aucune aujourd'hui.
    */
   /*
-   * BISECTION DE LA POLITIQUE.
+   * LA VRAIE DIFFÉRENCE ENTRE LA SONDE ET L'APPLICATION.
    *
-   * La clause WITH CHECK est :
+   * Constat du 2026-09-27 : la SONDE A (avec `client_id`, sans `status`)
+   * renvoie 201, et la SONDE B (sans `client_id`, le trigger fournit) renvoie
+   * 201 également. L'insertion MARCHE donc par l'API REST avec ce jeton.
    *
-   *     client_id = (select auth.uid()) AND status = 'draft'
+   * Et pourtant l'application échoue en 403. Ce n'est donc pas la base, ni la
+   * politique, ni le trigger, ni le jeton.
    *
-   * Deux conditions, et l'échec ne dit pas laquelle. Trois insertions
-   * permettent de les isoler SANS toucher à la base, puisque l'API REST
-   * renvoie un message différent pour chacune :
+   * Il reste une différence, et elle est dans l'ordre d'appel de
+   * `missionsService.createMission` :
    *
-   *   A. avec client_id, sans status
-   *      -> RLS        : ni l'un ni l'autre n'est vérifié
-   *      -> NOT NULL   : le déclencheur NE FOURNIT PAS client_id
+   *     supabase.from('missions').insert(mission).select().single()
    *
-   *   B. SANS client_id
-   *      -> NOT NULL   : le déclencheur ne s'exécute pas, et la colonne
-   *                      n'a pas de DEFAULT depuis la migration 01600
-   *      -> RLS        : le déclencheur s'exécute, fournit client_id, et
-   *                      c'est donc `status` qui est faux
+   * `.insert(...).select()` envoie l'en-tête `Prefer: return=representation`.
+   * La SONDE A, elle, utilise `return=minimal`. Ce n'est pas neutre : PostgREST
+   * exécute alors l'insertion PUIS relit la ligne insérée, et cette relecture
+   * est soumise à la politique de SELECT.
    *
-   *   C. avec client_id ET status = 'draft' explicites
-   *      -> RLS        : c'est donc `client_id` qui est faux
-   *      -> 201        : les deux conditions sont vérifiées
+   * Or la politique de SELECT de `missions` est :
    *
-   * C'est la seule méthode qui reste : un contrôle SQL dirait l'ÉTAT de la
-   * base, pas ce que PostgreSQL ÉVALUE au moment de l'insertion.
+   *     "Mission participants can view mission"
+   *     using (private.can_view_mission(id))
+   *
+   * `can_view_mission` est un `SECURITY DEFINER` qui interroge
+   * `mission_assignments`, `agent_profiles` et `company_profiles`. Si cette
+   * fonction échoue — pour une table manquante, une révoquée, une dépendance
+   * cassée — l'insertion est déjà faite, la relecture échoue, et PostgREST
+   * renvoie 403 en DONNANT L'IMPRESSION que l'écriture a été refusée.
+   *
+   * C'est l'hypothèse la plus forte, et elle s'applique PARFAITEMENT au
+   * journal : le message dit « new row violates row-level security policy »
+   * alors que l'écriture, elle, a réussi. Ce message ne devrait jamais
+   * apparaître sur un `return=minimal` réussi, et n'apparaît pas.
+   *
+   * LA SONDE D le vérifie : la MÊME insertion que la SONDE A, mais avec
+   * `return=representation`. Si D renvoie 403 et A renvoie 201, la cause est
+   * nommée : ce n'est pas l'écriture qui est refusée, c'est sa RELECTURE.
    */
-  const test: Record<string, unknown> = {
+  const chargeSonde: Record<string, unknown> = {
     client_id: uid,
     title: 'DIAG_PROBE',
     address: 'DIAG_PROBE',
@@ -136,51 +148,47 @@ async function diagnostiquerReseau(accessToken: string, uid: string): Promise<vo
     agent_count: 1,
   };
 
-  const sondes: { nom: string; corps: Record<string, unknown> }[] = [
-    { nom: 'A_avec_client_id', corps: { ...test } },
-    { nom: 'B_sans_client_id', corps: { ...test, client_id: undefined } },
-    { nom: 'C_avec_status', corps: { ...test, status: 'draft' } },
+  const variantes: { nom: string; prefer: string }[] = [
+    { nom: 'D_minimal', prefer: 'return=minimal' },
+    { nom: 'E_representation', prefer: 'return=representation' },
   ];
 
-  for (const sonde of sondes) {
-    const charge = sonde.corps;
-    // `undefined` n'est pas sérialisable : PostgREST le traiterait comme une
-    // colonne présente valant NULL, ce qui n'est pas la même chose que
-    // l'omettre. La clé est donc retirée explicitement.
-    if (charge.client_id === undefined) {
-      delete charge.client_id;
-    }
-
+  for (const variante of variantes) {
     try {
       const reponse = await fetch(`${base}/rest/v1/missions?select=*`, {
         method: 'POST',
         headers: {
           ...entetes,
           'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
+          Prefer: variante.prefer,
         },
-        body: JSON.stringify(charge),
+        body: JSON.stringify(chargeSonde),
       });
       const corps = await reponse.text();
-      // Le message est réduit à sa partie utile : « new row violates
-      // row-level security policy » tient en `RLS`, et « null value in column
-      // "client_id" violates not-null constraint » en `NOTNULL`.
+      // Signature réduite : RLS, NOTNULL, ou le début du message.
       const signature = /not-null/i.test(corps)
         ? 'NOTNULL'
         : /row-level security/i.test(corps)
           ? 'RLS'
-          : corps.slice(0, 90);
-      rapport.push(`SONDE${sonde.nom.charAt(0)}=${reponse.status}:${signature}`);
+          : /privileges/i.test(corps)
+            ? 'PRIVILEGES'
+            : corps.slice(0, 80) || 'vide';
+      rapport.push(`${variante.nom}=${reponse.status}:${signature}`);
     } catch (erreur) {
       rapport.push(
-        `SONDE${sonde.nom.charAt(0)}=ERREUR:${
-          erreur instanceof Error ? erreur.message : 'inconnue'
-        }`,
+        `${variante.nom}=ERREUR:${erreur instanceof Error ? erreur.message : 'inconnue'}`,
       );
     }
   }
 
-  // Nettoyage systématique : ce que les sondes ont créé, elles le détruisent.
+  /*
+   * SOLDE : `authenticated` n'a aucun droit `delete` sur `missions` — c'est
+   * correct et voulu. Les lignes DIAG_PROBE créées par les sondes RÉUSSIES
+   * restent donc en base, et l'application ne peut pas les retirer : il faut
+   * le faire en SQL. C'est le prix d'une sonde destructive sur une table que
+   * le client ne peut pas nettoyer, et cela aurait dû être prévu dès la
+   * première sonde.
+   */
   try {
     const reponse = await fetch(`${base}/rest/v1/missions?title=eq.DIAG_PROBE`, {
       method: 'DELETE',
