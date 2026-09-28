@@ -77,25 +77,66 @@ const TABLES = [
 // ne faut alors rien croire du reste du rapport.
 const CONTROL_TABLE = 'zzz_table_inexistante_temoin';
 
-// Chaque fonction a sa propre convention de nommage : les transitions de
-// mission prennent `target_mission_id`, les transitions d'affectation prennent
-// `target_assignment_id`.
+// Les paramètres d'une RPC PostgREST sont un objet dont les CLÉS sont les
+// NOMS d'arguments de la fonction. Une clé d'un seul coup, un seul nom : le
+// script ne pouvait donc interroger que des fonctions à un seul argument.
 //
-// Cette distinction est ESSENTIELLE : PostgREST cherche la fonction par sa
-// signature complète. Envoyer `target_mission_id` à `accept_assignment` ne
-// provoque pas une erreur d'autorisation mais un PGRST202 « fonction
-// introuvable », puisque aucune fonction de ce nom n'accepte ce paramètre.
-// Le diagnostic concluait donc à tort que 3 fonctions étaient absentes, alors
-// qu'elles étaient correctement installées et correctement refusées.
+// C'EST EXACTEMENT CE QUI A FAIT LE FAUX VERT DU 2026-09-28.
+//
+// `pointer_depart` a deux paramètres — `target_assignment_id` ET
+// `p_rapport` — et la sondee avec la seule cle `target_assignment_id` levait
+// `PGRST202 fonction introuvable`. Le script concluait « pas installee », et
+//.signalait une anomalie sur une fonction tres bien installee, tres bien
+//executee, et correctement cablee dans l'application.
+//
+// Le controle 25, lui, ne regardait que `proname` : un bon nom et une
+// mauvaise signature passaient tous les deux.
+//
+// Un diagnostic qui accuse la base doit pouvoir se tromper SUR LA BASE. Il
+// doit pouvoir se tromper sur LUI-MEME, et le dire.
+const PARAMS_UUID = '00000000-0000-0000-0000-000000000000';
+const VALEURS_ESSENTIELLES = { text: '' };
+
+const buildRpcBody = (parameters) =>
+  Object.fromEntries(
+    parameters.map(([name, kind]) => [
+      name,
+      VALEURS_ESSENTIELLES[kind] ?? PARAMS_UUID,
+    ]),
+  );
+
 const RPCS = [
-  { name: 'publish_mission', parameter: 'target_mission_id' },
-  { name: 'cancel_mission', parameter: 'target_mission_id' },
-  { name: 'complete_mission', parameter: 'target_mission_id' },
-  { name: 'mark_mission_paid', parameter: 'target_mission_id' },
-  { name: 'open_mission_dispute', parameter: 'target_mission_id' },
-  { name: 'accept_assignment', parameter: 'target_assignment_id' },
-  { name: 'reject_assignment', parameter: 'target_assignment_id' },
-  { name: 'complete_assignment', parameter: 'target_assignment_id' },
+  { name: 'publish_mission', parameters: [['target_mission_id', 'uuid']] },
+  { name: 'cancel_mission', parameters: [['target_mission_id', 'uuid']] },
+  { name: 'complete_mission', parameters: [['target_mission_id', 'uuid']] },
+  // Migration `20260928002400`. `complete_mission` reste dans la liste : elle
+  // existe, et la retirer ferait perdre le repere d'un passage anterieur.
+  //
+  // `cloturer_mission` la REMPLACE cote application, et pas seulement en plus.
+  // Elle fait avancer la mission ET ses affectations dans la meme operation —
+  // `complete_mission` ne touchait que la mission, et laissait l'affectation
+  // `accepted`. Le client voyait donc « Terminee » et « Acceptee » sur le meme
+  // ecran.
+  { name: 'cloturer_mission', parameters: [['target_mission_id', 'uuid']] },
+  // Migrations `20260928002200`. `pointer_arrivee` fait passer la mission
+  // `accepted` -> `in_progress`. `pointer_depart` met fin a la vacation de
+  // l'agent SANS cloturer la mission — c'est le client qui decide — et
+  // RECOIT LE RAPPORT DANS LE MEME APPEL.
+  //
+  // Le rapport se redacte au moment du depart : demander a l'agent de revenir
+  // plus tard pour ecrire ce qu'il a constate serait lui faire faire deux fois
+  // le meme travail. C'est aussi pour cela que la fonction prend DEUX
+  // parametres, et non un.
+  { name: 'pointer_arrivee', parameters: [['target_assignment_id', 'uuid']] },
+  {
+    name: 'pointer_depart',
+    parameters: [['target_assignment_id', 'uuid'], ['p_rapport', 'text']],
+  },
+  { name: 'mark_mission_paid', parameters: [['target_mission_id', 'uuid']] },
+  { name: 'open_mission_dispute', parameters: [['target_mission_id', 'uuid']] },
+  { name: 'accept_assignment', parameters: [['target_assignment_id', 'uuid']] },
+  { name: 'reject_assignment', parameters: [['target_assignment_id', 'uuid']] },
+  { name: 'complete_assignment', parameters: [['target_assignment_id', 'uuid']] },
 ];
 
 // Fonctions de diagnostic qui n'ont AUCUNE raison d'exister en production.
@@ -234,11 +275,21 @@ const checkTable = async (table) => {
   console.log(`  ALERTE   ${table.padEnd(22)} HTTP ${response.status} - ${message.slice(0, 90)}`);
 };
 
-const checkRpc = async ({ name: fn, parameter }) => {
+const checkRpc = async ({ name: fn, parameters }) => {
   // Appel volontairement refusé : la fonction doit exister dans le cache et
   // refuser le rôle anon. Aucun effet de bord n'est possible, l'identifiant
   // transmis n'existant pas et la fonction levant une exception avant toute
   // écriture.
+  //
+  // ⚠️ LE CORPS N'EST PAS NÉGLIGEABLE — c'est un 1er argument, pas un détail.
+  // PostgREST résout la fonction par SIGNATURE : un corps qui n'envoie pas
+  // TOUS les paramètres fait échouer l'appel en `PGRST202`, et le script
+  // conclut alors à tort que la fonction n'est pas installée. C'est arrivé le
+  // 2026-09-28 avec `pointer_depart`, dont le second paramètre `p_rapport` a
+  // été oublié ici — alors que l'application l'envoyait, lui, correctement.
+  const noms = parameters.map(([name]) => name);
+  const body = buildRpcBody(parameters);
+
   const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: {
@@ -246,23 +297,40 @@ const checkRpc = async ({ name: fn, parameter }) => {
       Authorization: `Bearer ${anonKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ [parameter]: '00000000-0000-0000-0000-000000000000' }),
+    body: JSON.stringify(body),
   });
-  const body = await response.text();
-  const { code, message } = parsePostgrestError(body);
+  const corps = await response.text();
+  const { code, message } = parsePostgrestError(corps);
 
   if (response.status === 404 && code === 'PGRST202') {
     // PGRST202 signifie que PostgREST n'a trouvé aucune fonction de ce nom
-    // acceptant CE paramètre. Deux causes très différentes : la fonction
-    // n'existe pas, ou le paramètre envoyé est incorrect. On distingue les
-    // deux sur le texte du message, sinon on accuse à tort la base.
-    const wrongParameter = message.includes(parameter) === false;
-    const reason = wrongParameter
-      ? `aucune fonction de ce nom n'accepte le paramètre attendu ${parameter}`
-      : 'la fonction n est pas installee';
+    // acceptant CE jeu de paramètres. Trois causes très différentes : la
+    // fonction n'existe pas, ou un paramètre envoyé est incorrect, ou il en
+    // MANQUE un.
+    //
+    // On accuse donc le SCRIPT en premier, et la base seulement ensuite. Un
+    // diagnostic qui ne sait pas se donner tort est un diagnostic qui accuse.
+    const parametreManquant = noms.find((nom) => !message.includes(nom));
+    const nomInconnu = noms.every((nom) => !message.includes(nom));
 
-    record(`rpc ${fn}`, reason);
-    console.log(`  ALERTE   rpc ${fn.padEnd(22)} ${reason}`);
+    let raison;
+    if (nomInconnu) {
+      raison = 'LE SCRIPT interroge avec des parametres qu AUCUNE fonction de ce nom';
+    } else if (parametreManquant) {
+      raison = `LE SCRIPT omet le parametre ${parametreManquant} dans son appel`;
+    } else {
+      raison = 'la fonction n est pas installee';
+    }
+
+    record(`rpc ${fn}`, raison);
+    console.log(`  ALERTE   rpc ${fn.padEnd(22)} ${raison}`);
+    console.log(
+      `           ${fn} existe peut-etre tres bien : verifier avec`,
+    );
+    console.log(
+      `           select proname, pg_get_function_identity_arguments(oid)`,
+    );
+    console.log(`             from pg_proc where proname = '${fn}';`);
     return;
   }
 
@@ -434,7 +502,18 @@ const run = async () => {
   if (anomalies.length === 0) {
     console.log('RESULTAT : conforme.');
     console.log('Les tables existent, la lecture sans session est refusee,');
-    console.log('les 8 fonctions de transition sont presentes,');
+    // LE NOMBRE EST CALCULE, JAMAIS ECRIT EN DUR.
+    //
+    // La ligne disait « les 8 fonctions » depuis le debut. Il y en a 11. Le
+    // rapport declarait donc conforme un etat qu'il ne decrivait pas, et le
+    // lecteur devait le croire sur parole — c'est exactement ce que ce script
+    // existe pour empecher.
+    //
+    // Regle : un rapport ne dit jamais un nombre qu'il ne mesure pas. S'il
+    // affiche une valeur, elle vient de la liste testee.
+    console.log(
+      `les ${RPCS.length} fonctions de transition sont presentes,`,
+    );
     console.log('et aucune fonction de diagnostic ne subsiste.');
     console.log('');
     console.log('Relisez malgre tout le controle 2 de');

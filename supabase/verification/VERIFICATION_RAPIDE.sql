@@ -628,6 +628,216 @@ with checks(controle, valeur, statut) as (
                          and p.prosecdef)
            then 'OK' else 'ALERTE' end
 
+  -- 23. Droits d'ecriture des pointages — `mission_assignments`.
+  --
+  --     LE CONTROLE 20 MESURE LES DROITS D'INSERT. AUCUN NE MESURAIT CEUX
+  --     D'UPDATE.
+  --
+  --     Ils portent sur 7 colonnes :
+  --
+  --       grant update (check_in_time, check_in_location_lat,
+  --                     check_in_location_lng, check_out_time,
+  --                     check_out_location_lat, check_out_location_lng,
+  --                     report) on table public.mission_assignments ...
+  --
+  --     Ce `grant` vient de `20260925000300`, et il n'a jamais été réaccordé
+  --     depuis. Or `000001_reset_all.sql` avait fait perdre les droits AU
+  --     NIVEAU TABLE de cette table lors du défaut P1b — le contrôle 20 l'a vu
+  --     pour l'insertion, et personne ne l'a vu pour la mise à jour.
+  --
+  --     C'est le meme raisonnement que pour le controle 12 : un droit absent
+  --     ne se remarque pas, parce qu'il ne se voit qu'à l'écriture, et que
+  --     rien n'écrit.
+  --
+  --     On mesure les 7 colonnes, ET on exige que `id`, `status` et les
+  --     identifiants de cible en soient ABSENTS : sans cela un agent pourrait
+  --     s'écrire `completed` sans passer par `complete_assignment`, et le
+  --     statut cesserait d'être une donnée serveur.
+  union all
+  select '23. Droits update pointages (7 colonnes, status exclu)',
+         (select count(*)::text from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'mission_assignments'
+             and grantee = 'authenticated' and privilege_type = 'UPDATE'),
+         case when (select count(*) from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'mission_assignments'
+             and grantee = 'authenticated' and privilege_type = 'UPDATE') >= 7
+           and not exists (select 1 from information_schema.column_privileges
+             where table_schema = 'public' and table_name = 'mission_assignments'
+               and grantee = 'authenticated' and privilege_type = 'UPDATE'
+               and column_name in ('id', 'status', 'mission_id',
+                                   'agent_id', 'company_id'))
+           then 'OK' else 'ALERTE' end
+
+  -- 24. Droits d'ecriture de la fiche agent — `agent_profiles`.
+  --
+  --     `is_available` PILOTAGE UN ECRAN DEPUIS LE 2026-09-28, et aucun
+  --     controle ne mesurait les droits d'ecriture de `agent_profiles`.
+  --
+  --     Le `grant` de `00300` en accorde 6 :
+  --
+  --       grant update (certification_number, certification_expiry, hourly_rate,
+  --                     zone, bio, is_available) on table public.agent_profiles
+  --
+  --     Le contrat TypeScript `AgentProfileUpdatableFields` n'en listait que 4.
+  --     Il etait donc plus etroit que le droit — sans danger — mais ce n'etait
+  --     pas la « contrepartie exacte » qu'il pretendait etre, et `is_available`
+  --     manquait. Les deux sont deux facons de diverger du meme `grant`.
+  --
+  --     On mesure les 6 colonnes, ET on exige que `id`, `profile_id`,
+  --     `company_id` et `status` en soient ABSENTS : sans cela un agent
+  --     pourrait se passer lui-meme en `validated`, et la validation
+  --     administrative — l'etape 9 — ne voudrait plus rien.
+  union all
+  select '24. Droits update fiche agent (6 colonnes, status exclu)',
+         (select count(*)::text from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'agent_profiles'
+             and grantee = 'authenticated' and privilege_type = 'UPDATE'),
+         case when (select count(*) from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'agent_profiles'
+             and grantee = 'authenticated' and privilege_type = 'UPDATE') >= 6
+           and not exists (select 1 from information_schema.column_privileges
+             where table_schema = 'public' and table_name = 'agent_profiles'
+               and grantee = 'authenticated' and privilege_type = 'UPDATE'
+               and column_name in ('id', 'profile_id', 'company_id', 'status'))
+           then 'OK' else 'ALERTE' end
+
+  -- 25. La mission peut se terminer — migration `20260928002200`.
+  --
+  --     JUSQU'ICI, UNE MISSION ACCEPTÉE ÉTAIT UN CUL-DE-SAC.
+  --
+  --     La matrice de `private.transition_mission` ne comportait AUCUNE ligne
+  --     pour `current_status = 'accepted'`. Or c'est là que l'agent place la
+  --     mission en l'acceptant. Elle ne pouvait donc plus être annulée
+  --     (`cancel_mission` exige `published`), ni disputée, ni terminée
+  --     (`complete_mission` exige `in_progress`) — et `in_progress` n'était
+  --     atteignable depuis rien.
+  --
+  --     `complete_mission` EXISTAIT, AVAIT ses droits, et n'a jamais été
+  --     appelée de toute façon : une fonction inutilisée est parfaitement
+  --     conforme, et aucun contrôle ne le voyait.
+  --
+  --     On vérifie trois choses : la matrice autorise `accepted` -> `in_progress`,
+  --     les deux fonctions de pointage sont au catalogue PUBLIC (une fonction
+  --     restée en `private` donnerait un 404 indistinguable d'un refus métier),
+  --     et `authenticated` peut les exécuter.
+  --
+  --     ET, DEPUIS LE 2026-09-28, QU'ELLES SONT VOLATILES.
+  --
+  --     Ce point a été ajouté après un échec : les deux fonctions étaient
+  --     présentes, accordées et en `SECURITY DEFINER`, et ce contrôle les
+  --     donnait pour bonnes. Elles étaient `STABLE` — donc déclarées sans effet
+  --     de bord — et l'appel échouait par « cannot execute SELECT FOR UPDATE in
+  --     a read-only transaction ».
+  --
+  --     `STABLE` N'EST PAS UN DETAIL ESTHETIQUE : c'est une promesse faite au
+  --     moteur. Un contrôle qui vérifie l'EXISTENCE d'une fonction d'écriture
+  --     laisse passer ce défaut ; un contrôle qui vérifie sa VOLATILITÉ non.
+  --
+  --     `pg_get_functiondef` REFORMATE le corps : la recherche est faite sur une
+  --     version où les espaces sont réduits à un seul, sinon le contrôle
+  --     dépendrait de la mise en forme du fichier.
+  union all
+  select '25. Matrice accepted -> in_progress + pointages publics',
+         (select case
+            when (select position(
+                           'current_status = ''accepted'' and next_status'
+                         in regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g')) > 0
+                    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                   where n.nspname = 'private' and p.proname = 'transition_mission')
+             and exists (select 1 from pg_proc p
+                          join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public'
+                           and p.proname in ('pointer_arrivee', 'pointer_depart')
+                           and p.prosecdef
+                           and p.provolatile = 'v')
+             and has_function_privilege('authenticated', 'public.pointer_arrivee(uuid)', 'EXECUTE')
+             and has_function_privilege('authenticated', 'public.pointer_depart(uuid, text)', 'EXECUTE')
+              then 'matrice reparee + 2 pointages publics'
+            else 'MATRICE FERMEE ou FONCTION ABSENTE'
+            end),
+         case when (select position(
+                        'current_status = ''accepted'' and next_status'
+                      in regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g')) > 0
+                  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'private' and p.proname = 'transition_mission')
+           and exists (select 1 from pg_proc p
+                        join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public'
+                         and p.proname in ('pointer_arrivee', 'pointer_depart')
+                         and p.prosecdef
+                         and p.provolatile = 'v')
+           and has_function_privilege('authenticated', 'public.pointer_arrivee(uuid)', 'EXECUTE')
+           and has_function_privilege('authenticated', 'public.pointer_depart(uuid, text)', 'EXECUTE')
+           then 'OK' else 'ALERTE' end
+
+  -- 26. La clôture est atomique — migration `20260928002400`.
+  --
+  --     LE DÉFAUT 9, ET IL ÉTAIT VISIBLE À L'ŒIL.
+  --
+  --     Le client clôturait sa mission, le badge passait à « Terminée » — et
+  --     l'agent voyait toujours « Acceptée » de son côté. Deux statuts qui
+  --     doivent dire la même chose, et aucun geste qui les fasse avancer
+  --     ensemble.
+  --
+  --     La cause : `transition_mission` n'écoute que le CLIENT,
+  --     `transition_assignment` que l'AGENT AFFECTÉ. Un client ne peut pas
+  --     compléter sa propre affectation, et `complete_assignment` n'a jamais
+  --     été appelée de toute façon. Le neuvième de la série.
+  --
+  --     `cloturer_mission` fait les deux dans la MÊME opération.
+  --
+  --     On vérifie donc QUATRE choses, dont la dernière est la plus importante :
+  --     que la fonction publique existe, est VOLATILE (le défaut 8 a montré le
+  --     prix de l'oublier), que le client peut l'exécuter — et qu'elle
+  --     CONSULTE `check_out_time`.
+  --
+  --     Ce dernier point est LE cœur de la fonction. Sans lui, un client
+  --     pourrait clore sa mission et forcer une affectation à `completed` alors
+  --     que l'agent n'est jamais venu — et ne plus contester, puisque son
+  --     affectation serait close. Un contrôle qui vérifie seulement l'existence
+  --     de la fonction donnerait raison pour une fonction sans aucune garantie.
+  --
+  --     `pg_get_functiondef` REFORMATE le corps : la recherche est faite sur une
+  --     version où les espaces sont réduits à un seul.
+  union all
+  select '26. Cloture atomique mission + affectations',
+         (select case
+            when (select position(
+                           'check_out_time'
+                         in regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g')) > 0
+                    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                   where n.nspname = 'private' and p.proname = 'cloturer_mission')
+             and exists (select 1 from pg_proc p
+                          join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public'
+                           and p.proname = 'cloturer_mission'
+                           and p.prosecdef
+                           and p.provolatile = 'v')
+             and has_function_privilege('authenticated', 'public.cloturer_mission(uuid)', 'EXECUTE')
+           then 'corps, volatileite, droits et garantie check_out_time conformes'
+           when exists (select 1 from pg_proc p
+                         join pg_namespace n on n.oid = p.pronamespace
+                        where n.nspname = 'public'
+                          and p.proname = 'cloturer_mission'
+                          and p.prosecdef
+                          and p.provolatile = 'v')
+           then 'PRESENTE ET VOLATILE, MAIS la garantie check_out_time est ABSENTE du corps'
+           else 'absente du schema public, ou non SECURITY DEFINER, ou non VOLATILE, ou droit manquant'
+         end),
+         case when (select position(
+                        'check_out_time'
+                      in regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g')) > 0
+                   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                  where n.nspname = 'private' and p.proname = 'cloturer_mission')
+              and exists (select 1 from pg_proc p
+                           join pg_namespace n on n.oid = p.pronamespace
+                          where n.nspname = 'public'
+                            and p.proname = 'cloturer_mission'
+                            and p.prosecdef
+                            and p.provolatile = 'v')
+              and has_function_privilege('authenticated', 'public.cloturer_mission(uuid)', 'EXECUTE')
+           then 'OK' else 'ALERTE' end
+
 
 )
 
