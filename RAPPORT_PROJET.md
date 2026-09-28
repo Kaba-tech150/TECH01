@@ -72,41 +72,36 @@ rencontrés »).
 
 ## Étape en cours
 
-### ÉTAPE 6 du plan — PARCOURS CLIENT : 3 jalons sur 5
+### ÉTAPES 6 ET 7 — PARCOURS COMPLET ÉCRIT, **RIEN N'EST VÉRIFIÉ À L'ÉCRAN**
 
-| Jalon | État | Preuve |
+Session du **2026-09-28**, deuxième partie. La première partie avait validé la
+demande, la recherche, la publication et la réservation.
+
+| Domaine | Écrit | Vérifié à l'écran |
 |---|---|---|
-| Demande | ✅ **Validée à l'écran** | **[V]** mission créée le 2026-09-27, valeurs en base |
-| Recherche | ✅ **Validée à l'écran** | **[V]** agent retrouvé par un compte client |
-| Sélection | ⚠️ **Partielle** | **[D]** la carte s'affiche ; **pas d'écran de détail, pas de passage à la réservation** |
-| Réservation | ✅ **Validée à l'écran** | **[V]** 2026-09-28 : 2 affectations créées, `status = pending`, cibles `agent` |
-| Suivi | ❌ **Absent** | **[V]** aucune vue de mission en cours |
+| Étape 6 — parcours client | **complet** | jusqu'à la réservation seulement |
+| Étape 7 — parcours agent | **complet** | **[X] aucun des 5 écrans ouvert** |
 
-### Ce que la base offre déjà, et qui n'est pas utilisé
+**C'est le seul obstacle qui reste**, et il n'est pas dans le code.
 
-L'affectation est le seul domaine où **le serveur est plus avancé que le
-client**. Tout est en place et mesuré :
+### Ce que la session a produit
 
-| Brique | État | Preuve |
-|---|---|---|
-| Helper `private.can_assign_mission` | ✅ en base | **[V]** contrôle 11 = `1` |
-| Politique `insert` sur `mission_assignments` | ✅ en base | **[V]** contrôle 12 = `1` |
-| Droits d'écriture | ✅ en base | **[V]** contrôle 20 = `4`, et `status` / `report` / pointages **exclus** |
-| Visibilité des prestataires | ✅ en base | **[V]** contrôle 21 = politique ouverte **et** fonction publique présente |
-| `createAssignment` (service) | ✅ écrit | **[V]** `.select()` retiré le 2026-09-28 |
-| `publishMission` | ✅ **Validée à l'écran** | **[V]** 2026-09-28 : première transition d'état jamais exécutée, **elle fonctionne** |
-| `createAssignment` | ✅ **Validée à l'écran** | **[V]** 2 lignes créées, politique et `grant` acceptés |
-| `acceptAssignment`, `rejectAssignment` | ⚠️ codés | **[X]** jamais exécutés — étape 7 |
-| Hook `useAssignments` | ✅ **écrit** | **[V]** `useReserverPrestataire`, `useAffectationsMission` |
-| Écran de réservation (client) | ✅ **écrit** | **[V]** `(client)/prestation/[id]` |
-| Écran d'affectation (agent) | ❌ **absent** | étape 7 |
+| Élément | Preuve |
+|---|---|
+| Pointage d'arrivée et de départ | **côté agent**, jamais ouvert |
+| Rapport joint au départ | `pointer_depart(affectation, p_rapport)` |
+| Écran de disponibilité | `is_available` |
+| `cloturer_mission` | migration `20260928002400` |
+| `scripts/test-parcours.js` | 13 étapes, 5 cas négatifs, **[X] jamais exécuté** |
 
-### Correction de nomenclature
+### Les dix défauts
 
-**[V]** La version précédente de ce rapport appelait « étape 7 » le parcours
-d'affectation. Avec le plan en main, c'est inexact : **l'étape 7 du plan est le
-PARCOURS AGENT**. L'affectation appartient aux deux derniers jalons de l'étape 6
-(*réservation*, *suivi*). Les libellés de ce rapport suivent désormais le plan.
+Trois ont été vus **par le commanditaire**, pas par un contrôle : la mission
+« Terminée » pendant que l'affectation disait « Acceptée », un pointage en
+`HTTP 405`, et un diagnostic qui s'accusait lui-même.
+
+**Aucun des dix n'était détectable par un contrôle d'état.** Voir
+*Problèmes rencontrés*.
 
 ---
 
@@ -117,36 +112,43 @@ PARCOURS AGENT**. L'affectation appartient aux deux derniers jalons de l'étape 
 | 0 — Environnement | ✅ | **[V]** Node 24.15.0, npm 11.12.1, Expo 57.0.25, Router 57.0.23, TypeScript 6.0.3 |
 | 1 — Architecture | ✅ | **[V]** structure conforme au plan, design system, `RAPPORT_PROJET.md` |
 | 2 — Page d'accueil | ✅ | **[V]** `welcome.tsx`, export web, polices chargées avant le splash |
-| 3 — Supabase | ✅ | **[V]** 21 contrôles au vert · **écriture testée à l'écran** |
+| 3 — Supabase | ✅ | **[V]** 26 contrôles au vert · **écriture testée à l'écran** |
 | 4 — Authentification | ✅ | **[V]** inscription, connexion, session persistante, rôles |
 | 5 — Routing par rôle | ✅ | **[V]** les 4 groupes rendent, `ProtectedRoute` par rôle |
-| 6 — Parcours client | ⚠️ **en cours** | **[V]** demande et recherche validées · **réservation et suivi restants** |
+| 6 — Parcours client | ⚠️ **codé** | **[V]** demande, recherche, publication, réservation · **[X] suivi et clôture non testés |
 | 6 bis — Fiche agent | ✅ | **[V]** création **et** modification, valeurs en base |
 | 6 ter — Recherche | ✅ | **[V]** agent retrouvé par un compte client |
+| 7 — Parcours agent | ⚠️ **codé** | **[X] aucun écran ouvert |
+| 12 — Qualité | ⚠️ **amorcée** | **[V]** `test:parcours` écrit · **[X] jamais exécuté |
 
-> L'étape 6 est marquée « en cours », pas « terminée ». Les étapes 6 bis et
-> 6 ter sont des jalons de l'étape 6, pas des étapes indépendantes.
+> Les étapes 6 et 7 sont marquées « codé », pas « terminée ». **Du code non
+> exécuté n'est pas une fonctionnalité**, et l'étape 6 l'a déjà démontré : elle
+> était couverte par des contrôles verts et le parcours était cassé trois fois.
 
 ---
 
 ## Prochaine étape
 
-### ÉTAPE 6 (suite) — RÉSERVATION : le client réserve un prestataire
+### Lancer `test:parcours`, puis ouvrir les écrans de l'étape 7
 
-**C'est le dernier verrou du parcours client.** Tant qu'il n'est pas franchi,
-l'application ne sert à rien : un client peut formuler un besoin et trouver des
-prestataires, mais ne peut pas les engager.
+**C'est la seule chose qui bloque.** Tout le reste est écrit.
 
-**Sous-étapes réalisées et validées le 2026-09-28 :**
+**1. Le test automatique** — 3 valeurs à renseigner dans `.env.test`, puis :
 
-| # | Sous-étape | Fichiers | État |
-|---|---|---|---|
-| 1 | Bouton « Publier » sur un brouillon, via la RPC `publish_mission` | `MissionCard.tsx`, `(client)/missions.tsx` | ✅ **validé à l'écran** |
-| 2 | Hook `useAssignments` | `features/missions/useAssignments.ts` | ✅ **validé** |
-| 3 | Écran de réservation | `(client)/prestation/[id].tsx` | ✅ **validé** |
-| 4 | `createAssignment`, sans `.select()` | `missions.service.ts` | ✅ **validé** |
-| 5 | Lecture des affectations, sans imbrication | `listerAffectationsMission` | ✅ **validé** |
-| 6 | Traduction du doublon `23505` et blocage avant clic | `errors.ts`, écran de réservation | ✅ codé, **[X] non testé** |
+```bash
+npm run test:parcours
+```
+
+Il joue le parcours avec deux comptes réels et **cinq cas négatifs** — clore
+une mission qui n'a pas commencé, partir sans être arrivé, clore avant le
+départ, departure répétée, clôturer deux fois. Ces cinq transitions **n'ont
+jamais été essayées**.
+
+**2. Les écrans de l'étape 7** — le test joue la base, pas React Native.
+Le parcours agent reste non vérifié même si le test est vert.
+
+**3. Ensuite seulement**, les décisions métier : missions publiées côté agent,
+modèle fermé ou appel d'offres, annuaire réciproque, visibilité de l'adresse.
 
 ### Le test qui a jugé l'étape — RÉUSSI
 
