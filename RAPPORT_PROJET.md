@@ -516,6 +516,21 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 
 ---
 
+### Étape 12 — amorcée
+
+- **[V]** `scripts/test-parcours.js` : joue le parcours complet avec **deux
+  comptes réels**, 13 étapes, dont **5 cas négatifs**
+- **[X]** **Jamais exécuté** — il exige deux couples email / mot de passe, dans
+  un `.env.test` ignoré par git. C'est le premier test automatique du projet,
+  et son premier résultat est encore inconnu
+- **[X]** Aucun test unitaire, aucun test d'intégration
+
+**Pourquoi ce fichier existe :** les dix défauts ont tous survécu à des
+contrôles qui mesurent l'état de la base. Ce test mesure ce que la base **fait**.
+C'est la seule famille de contrôle qui aurait pu les voir.
+
+---
+
 ## Fonctionnalités restantes
 
 ### Étape 6 — codée, un test la sépare de « terminée »
@@ -544,7 +559,7 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 | 9 — Admin | validation des comptes, documents, utilisateurs, missions, litiges | aucun écran |
 | 10 — Paiement | Stripe, commission, transactions, webhooks, wallet | **prestataire et taux non confirmés** |
 | 11 — Temps réel | localisation, suivi, chat, notifications | **cartographie non choisie** |
-| 12 — Qualité | tests, sécurité, performances, audit | **aucun test automatisé** |
+| 12 — Qualité | tests, sécurité, performances, audit | **`test:parcours` écrit, jamais exécuté** |
 | 13 — Production | builds, environnement de production, monitoring | — |
 
 ---
