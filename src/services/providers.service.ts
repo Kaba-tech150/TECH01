@@ -56,6 +56,45 @@ export type Prestataire = {
   status: ProviderStatus;
 };
 
+/**
+ * Prestataire tel qu'un client peut le nommer sur une mission.
+ *
+ * Forme volontairement RÉDUITE : ce n'est pas une carte de visite, c'est de quoi
+ * écrire « Qui a accepté ma mission ? » sans lire `profiles` — que la RLS réserve
+ * à l'intéressé et à l'administrateur.
+ */
+export type PrestataireRef = {
+  id: string;
+  kind: 'agent' | 'company';
+  nom: string;
+  /**
+   * `null` si la base renvoie un statut inconnu.
+   *
+   * Ce n'est pas une fiction : PostgREST rend la colonne en `text`, et une
+   * valeur hors énumération ne doit ni faire échouer l'écran ni être affichée
+   * telle quelle. L'interface omet alors simplement le statut.
+   */
+  statut: ProviderStatus | null;
+  /** `numeric` en base. `null` pour une société : le modèle ne le prévoit pas. */
+  tarifHoraire: number | null;
+};
+
+/** Les sept statuts de `provider_status`, énumérés explicitement. */
+const PROVIDER_STATUSES: readonly ProviderStatus[] = [
+  'registered',
+  'documents_submitted',
+  'in_validation',
+  'validated',
+  'rejected',
+  'active',
+  'suspended',
+];
+
+/** Valide un statut venu du serveur, ou renvoie `null`. Jamais de transtype. */
+function versProviderStatus(valeur: string): ProviderStatus | null {
+  return PROVIDER_STATUSES.find((statut) => statut === valeur) ?? null;
+}
+
 /** Critères de filtrage acceptés par la recherche. */
 export type RechercheCriteres = {
   /** Texte libre : nom, description, bio. */
@@ -133,6 +172,15 @@ type LigneCompany = {
   city: string | null;
   postal_code: string | null;
   status: ProviderStatus;
+};
+
+/** Forme brute renvoyée par `public.prestataires_par_ids`. */
+type LignePrestataireRef = {
+  id: string;
+  kind: string;
+  nom: string;
+  statut: string;
+  tarif_horaire: number | null;
 };
 
 
@@ -297,6 +345,48 @@ export const providersService = {
     }));
 
     return [...listeAgents, ...listeCompanies];
+  },
+
+  /**
+   * Prestataires nommés par leurs identifiants.
+   *
+   * APPELLE `public.prestataires_par_ids`, MIGRATION `20260928002100`.
+   *
+   * Tant que cette migration n'est pas appliquée, l'appel renvoie un **404
+   * silencieux** — exactement comme `02000` l'a fait pour
+   * `liste_agents_publics`. C'est pourquoi l'appelant traite cette requête
+   * comme facultative : un échec ici doit laisser les affectations lisibles
+   * sans nom, jamais casser l'écran qui les affiche.
+   *
+   * Un tableau vide est traité EN AMONT, sans appel réseau : la fonction
+   * renvoyerait alors un jeu vide, et l'appel coûterait un aller-retour pour
+   * constater une absence.
+   */
+  async prestatairesParIds(ids: string[]): Promise<PrestataireRef[]> {
+    if (ids.length === 0) return [];
+
+    const { data, error } = await supabase.rpc('prestataires_par_ids', {
+      p_ids: ids,
+    });
+
+    if (error) throw error;
+
+    return ((data ?? []) as unknown as LignePrestataireRef[]).map((ligne) => ({
+      id: ligne.id,
+      /*
+       * `kind` EST RESTREINT, PAS TRANSTYPÉ.
+       *
+       * La fonction ne renvoie que 'agent' ou 'company', mais PostgREST rend la
+       * colonne en `text` : le contrat ne peut pas le garantir à la
+       * compilation. Un `as 'agent' | 'company'` ferait taire `tsc` sans rien
+       * vérifier ; la comparaison ci-dessous fait exactement ce que la
+       * fonction fait.
+       */
+      kind: ligne.kind === 'company' ? 'company' : 'agent',
+      nom: ligne.nom,
+      statut: versProviderStatus(ligne.statut),
+      tarifHoraire: ligne.tarif_horaire,
+    }));
   },
 
   /**

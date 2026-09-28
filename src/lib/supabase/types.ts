@@ -668,6 +668,27 @@ export interface Database {
           status: string | null;
         }[];
       };
+      /**
+       * Prestataires nommés par identifiant — migration 20260928002100.
+       *
+       * `mission_assignments` ne stocke qu'un `agent_id` ou un `company_id`, et
+       * le nom affiché d'un agent vit dans `profiles`, table fermée au client.
+       * Sans cette fonction, l'écran de suivi ne pouvait écrire que
+       * « Agent a3f8b2c1-… ».
+       *
+       * `p_ids` est un tableau et non un texte : il part lié, donc il ne peut
+       * pas être réécrit par l'appelant.
+       */
+      prestataires_par_ids: {
+        Args: { p_ids: string[] };
+        Returns: {
+          id: string;
+          kind: string;
+          nom: string;
+          statut: string;
+          tarif_horaire: number | null;
+        }[];
+      };
       accept_assignment: {
         Args: { target_assignment_id: string };
         Returns: Database['public']['Enums']['assignment_status'];

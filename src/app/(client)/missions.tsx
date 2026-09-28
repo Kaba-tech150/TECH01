@@ -1,14 +1,44 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button, Card, Typography } from '@/components/ui';
 import { COLORS, SPACING } from '@/constants';
-import { MissionCard, useClientMissions, useMissionErrorMessage } from '@/features/missions';
+import {
+  MissionCard,
+  useClientMissions,
+  useMissionErrorMessage,
+  usePublishMission,
+} from '@/features/missions';
 
 export default function ClientMissions() {
   const router = useRouter();
   const { data: missions, isPending, isError, error, refetch } = useClientMissions();
   const messageErreur = useMissionErrorMessage();
+  const publier = usePublishMission();
+  const [erreurPublication, setErreurPublication] = useState<string | null>(null);
+
+  /**
+   * Publie une mission via la RPC serveur.
+   *
+   * `publish_mission` est la PREMIÈRE transition jamais exécutée dans ce
+   * projet. Elle n'a donc aucune preuve à son actif, et son échec est traité
+   * comme n'importe quel autre : message traduit à l'écran, cause technique
+   * dans le journal Metro. Si elle échoue, c'est un fait à constater, pas un
+   * défaut à contourner.
+   *
+   * L'erreur est rendue ICI, sous la liste, et non dans une bannière flottante :
+   * elle concerne une carte précise, et une bannière globale ferait croire à un
+   * échec de la liste entière.
+   */
+  const publierMission = async (missionId: string) => {
+    setErreurPublication(null);
+    try {
+      await publier.mutateAsync(missionId);
+    } catch (erreur) {
+      setErreurPublication(messageErreur(erreur, 'publier'));
+    }
+  };
 
   const afficherChargement = () => (
     <View style={styles.centred}>
@@ -61,9 +91,33 @@ export default function ClientMissions() {
         </Card>
       ) : null}
 
+      {erreurPublication ? (
+        <Card style={styles.erreurPublication}>
+          <Typography variant="h3">Publication impossible</Typography>
+          <Typography
+            variant="caption"
+            color={COLORS.textSecondary}
+            style={styles.erreurTexte}
+          >
+            {erreurPublication}
+          </Typography>
+        </Card>
+      ) : null}
+
       {!isPending && !isError && missions && missions.length > 0
         ? missions.map((mission) => (
-            <MissionCard key={mission.id} mission={mission} />
+            <MissionCard
+              key={mission.id}
+              mission={mission}
+              onPress={() =>
+                router.push({
+                  pathname: '/(client)/mission/[id]',
+                  params: { id: mission.id },
+                })
+              }
+              onPublier={publierMission}
+              publicationEnCours={publier.isPending}
+            />
           ))
         : null}
     </ScrollView>
@@ -97,5 +151,14 @@ const styles = StyleSheet.create({
   cardText: {
     marginTop: SPACING.sm,
     marginBottom: SPACING.lg,
+  },
+  erreurPublication: {
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+  },
+  erreurTexte: {
+    marginTop: SPACING.xs,
   },
 });

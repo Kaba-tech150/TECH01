@@ -1,4 +1,4 @@
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import {
   BORDER_RADIUS,
   COLORS,
@@ -17,6 +17,19 @@ interface CardProps {
   /** Ajoute le liseré cyan de 1px sur le bord supérieur (signature de la marque). */
   accent?: boolean;
   padding?: number;
+  /**
+   * Rend la carte actionnable.
+   *
+   * FACULTATIF, ET LE COMPORTEMENT DIFFÈRE VRAIMENT : sans gestionnaire, la
+   * carte reste une `View` et n'est pas annoncée comme un bouton. Avec, elle
+   * devient un `Pressable` — et le lecteur d'écran le sait.
+   *
+   * `onPress` plutôt qu'un booléen `isPressable` : une carte annoncée comme
+   * bouton mais insensible est un défaut d'accessibilité, et il n'apparaît qu'à
+   * l'usage, jamais à la compilation.
+   */
+  onPress?: () => void;
+  accessibilityLabel?: string;
 }
 
 /**
@@ -34,12 +47,38 @@ export function Card({
   variant = 'default',
   accent = false,
   padding = SPACING.lg,
+  onPress,
+  accessibilityLabel,
 }: CardProps) {
-  return (
-    <View style={[styles.card, styles[variant], { padding }, style]}>
+  /*
+   * LE STYLE EST CALCULÉ UNE SEULE FOIS, POUR LES DEUX FORMES.
+   *
+   * Le dupliquer entre la `View` et le `Pressable` ferait diverger les deux
+   * rendus au premier changement de variante — et la divergence n'apparaîtrait
+   * que sur les cartes actionnables, c'est-à-dire celles qu'on regarde le moins.
+   */
+  const styleCarte = [styles.card, styles[variant], { padding }, style];
+
+  const contenu = (
+    <>
       {accent ? <View style={styles.accent} /> : null}
       {children}
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={styleCarte}>{contenu}</View>;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={styleCarte}
+    >
+      {contenu}
+    </Pressable>
   );
 }
 

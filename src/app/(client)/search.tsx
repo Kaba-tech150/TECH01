@@ -1,9 +1,15 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Button, Typography } from '@/components/ui';
 import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
-import { CartePrestataire, trierPrestataires, usePrestataires } from '@/features/prestataires';
+import {
+  CartePrestataire,
+  trierPrestataires,
+  usePrestataires,
+} from '@/features/prestataires';
 import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
+import type { Prestataire } from '@/services';
 
 /**
  * Recherche de prestataires.
@@ -22,6 +28,7 @@ import { logTechnicalError, toUserFacingError } from '@/lib/supabase/errors';
  * recherche est vide alors qu'elle n'a pas encore eu lieu.
  */
 export default function ClientSearch() {
+  const router = useRouter();
   const [saisie, setSaisie] = useState('');
   const [recherche, setRecherche] = useState('');
   const [ville, setVille] = useState('');
@@ -81,6 +88,30 @@ export default function ClientSearch() {
     // La saisie n'est appliquée qu'au bouton : chercher à chaque frappe
     // enverrait une requête par caractère, sur un réseau mobile.
     setRecherche(saisie);
+  };
+
+  /**
+   * Ouvre la réservation d'un prestataire.
+   *
+   * LE NOM ET LE TARIF PASSENT PAR L'URL, ET C'EST UN CHOIX ASSUMÉ.
+   *
+   * Le nom d'un agent n'est pas lisible par un client : il vit dans `profiles`,
+   * que la RLS réserve à l'intéressé et à l'administrateur. Il n'est donc
+   * obtenu que par `liste_agents_publics`, qui filtre par TEXTE et ne sait pas
+   * rendre une ligne par identifiant. Refaire une lecture par `id` coûterait
+   * une migration, pour un écran qui affiche ce que la liste vient de montrer.
+   *
+   * Ces paramètres ne servent qu'à l'affichage. L'écriture n'utilise que `id`,
+   * `kind` et l'identifiant de mission choisi dans l'écran suivant — et la
+   * politique « Mission owners can create assignments » valide la mission, pas
+   * l'affichage. Un nom falsifié dans l'URL donne donc une carte mensongère,
+   * jamais une affectation sur un autre compte.
+   */
+  const ouvrirReservation = (p: Prestataire) => {
+    router.push({
+      pathname: '/(client)/prestation/[id]',
+      params: { id: p.id, kind: p.kind, nom: p.nom, taux: p.hourlyRate ?? '' },
+    });
   };
 
   const reinitialiser = () => {
@@ -185,7 +216,11 @@ export default function ClientSearch() {
             {resultats.length > 1 ? 's' : ''}
           </Typography>
           {resultats.map((p) => (
-            <CartePrestataire key={`${p.kind}-${p.id}`} prestataire={p} />
+            <CartePrestataire
+              key={`${p.kind}-${p.id}`}
+              prestataire={p}
+              onPress={() => ouvrirReservation(p)}
+            />
           ))}
         </>
       )}

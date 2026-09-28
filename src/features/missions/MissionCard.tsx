@@ -1,4 +1,4 @@
-import { Badge, Card, Typography } from '@/components/ui';
+import { Badge, Button, Card, Typography } from '@/components/ui';
 import {
   BORDER_RADIUS,
   COLORS,
@@ -13,6 +13,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 interface MissionCardProps {
   mission: Mission;
+  /**
+   * Rend le bouton « Publier » lorsque la mission est un brouillon.
+   *
+   * La carte reste PRÉSENTATIONNELLE : elle ne connaît ni la mutation, ni
+   * TanStack Query. Elle reçoit un gestionnaire, et c'est l'écran qui décide
+   * s'il existe. Une carte qui déclenchait elle-même une écriture serait
+   * impossible à réutiliser ailleurs — et l'impossible à tester.
+   */
+  /** Ouvre le suivi de la mission. Rendu la carte actionnable. */
+  onPress?: () => void;
+  onPublier?: (missionId: string) => void;
+  /** Vrai pendant l'appel à la RPC : le bouton est désactivé, pas masqué. */
+  publicationEnCours?: boolean;
 }
 
 /**
@@ -21,11 +34,20 @@ interface MissionCardProps {
  * Le budget est affiché seulement s'il est renseigné : afficher « 0,00 € »
  * pour une mission sans budget laisserait croire à un prix, ce qui est faux.
  */
-export function MissionCard({ mission }: MissionCardProps) {
+export function MissionCard({
+  mission,
+  onPress,
+  onPublier,
+  publicationEnCours = false,
+}: MissionCardProps) {
   const aBudget = mission.budget !== null && mission.budget !== undefined;
 
   return (
-    <Card style={styles.card}>
+    <Card
+      style={styles.card}
+      onPress={onPress}
+      accessibilityLabel={`Suivre la mission ${mission.title}`}
+    >
       <View style={styles.header}>
         <Typography variant="h3" style={styles.title} numberOfLines={2}>
           {mission.title}
@@ -63,6 +85,29 @@ export function MissionCard({ mission }: MissionCardProps) {
         <Text style={styles.address} numberOfLines={2}>
           {mission.address}
         </Text>
+      ) : null}
+
+      {/*
+       * LE BOUTON N'APPARAÎT QUE SUR UN BROUILLON, ET SEULEMENT SI L'ÉCRAN
+       * EN FOURNIT UN GESTIONNAIRE.
+       *
+       * Les deux conditions sont nécessaires, et pour deux raisons distinctes.
+       * La première : une mission déjà publiée ne se republie pas. La matrice de
+       * transitions refuserait l'appel, et l'utilisateur verrait un échec sur
+       * une action qui n'a pas de sens — le pire des deux mondes, puisque ça
+       * ressemble à un bug. La seconde : ce composant est réutilisable, et la
+       * publication n'a pas sa place partout.
+       */}
+      {mission.status === 'draft' && onPublier ? (
+        <Button
+          title="Publier"
+          icon="send"
+          variant="secondary"
+          size="md"
+          onPress={() => onPublier(mission.id)}
+          disabled={publicationEnCours}
+          style={styles.action}
+        />
       ) : null}
     </Card>
   );
@@ -120,5 +165,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     borderRadius: BORDER_RADIUS.sm,
+  },
+  action: {
+    marginTop: SPACING.md,
   },
 });

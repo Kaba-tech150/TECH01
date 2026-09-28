@@ -156,16 +156,45 @@ export function usePublishMission() {
 }
 
 /**
- * Messages d'erreur traduits pour un échec de création.
+ * Une mission par son identifiant.
+ *
+ * `enabled: false` tant qu'aucun identifiant n'est fourni. La même raison que
+ * pour `useAffectationsMission` : sans cela, la requête partirait avec une
+ * chaîne vide et renverrait une erreur sans rapport avec l'écran affiché.
+ */
+export function useMission(missionId: string | null) {
+  return useQuery({
+    queryKey: ['missions', missionId],
+    queryFn: () => {
+      if (missionId === null) {
+        throw new Error('Aucune mission sélectionnée.');
+      }
+      return missionsService.getMissionById(missionId);
+    },
+    enabled: missionId !== null,
+  });
+}
+
+/**
+ * Messages d'erreur traduits pour une opération sur une mission.
  *
  * Séparé des hooks pour que la logique d'affichage reste dans l'écran : un
  * hook ne doit pas décider de la couleur d'un bandeau.
+ *
+ * `defaut` est facultatif : les opérations voisines — une réservation, par
+ * exemple — partagent ce comportement mais pas sa formulation. Plutôt que de
+ * dupliquer ce `useCallback` dans chaque fichier, on rend le libellé
+ * remplaçable. Le défaut reste « la mission », donc aucun appelant existant ne
+ * change de texte.
  */
 export function useMissionErrorMessage() {
   return useCallback(
-    (error: unknown, action: string) => {
+    (error: unknown, action: string, defaut?: string) => {
       logTechnicalError(action, error);
-      return toUserFacingError(error, `Impossible de ${action} la mission.`).message;
+      return toUserFacingError(
+        error,
+        defaut ?? `Impossible de ${action} la mission.`,
+      ).message;
     },
     [],
   );

@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase';
-import type { MissionUpdatableFields, TableInsert } from '@/types';
+import type {
+  AssignmentStatus,
+  MissionUpdatableFields,
+  TableInsert,
+} from '@/types';
 
 type MissionAssignmentWithMission = {
   id: string;
@@ -31,6 +35,28 @@ type MissionAssignmentWithMission = {
       | 'disputed'
       | 'paid';
   } | null;
+};
+
+/**
+ * Affectation telle que le client propriétaire de la mission peut la lire.
+ *
+ * COLONNES DE LA TABLE SEULE, SANS IMBRICATION.
+ *
+ * C'est la contrepartie exacte de ce que la politique
+ * « Mission participants can view assignments » autorise : `can_view_assignment`
+ * exige un statut `pending`, `accepted` ou `completed`, et que le lecteur soit le
+ * client, l'agent ou la société. Une affectation `rejected` n'est donc pas
+ * visible du client — et c'est correct : personne n'a à savoir qu'un
+ * prestataire a refusé.
+ */
+export type MissionAssignmentSummary = {
+  id: string;
+  mission_id: string;
+  agent_id: string | null;
+  company_id: string | null;
+  status: AssignmentStatus;
+  proposed_rate: number | null;
+  created_at: string;
 };
 
 /**
@@ -262,17 +288,36 @@ export const missionsService = {
   // `num_nonnulls(agent_id, company_id) = 1`, donc exactement UNE des deux
   // colonnes est renseignée. Les rendre toutes deux obligatoires dans le type
   // ferait rejeter à la compilation la forme la plus courante de l'affectation.
+  // ⚠️ NE PAS AJOUTER `.select()` — 2026-09-28
+  //
+  // Motif identique à `createMission` : `.insert().select()` envoie
+  // `Prefer: return=representation`. PostgREST insère la ligne, puis la RELIT,
+  // et cette relecture passe par « Mission participants can view assignments »
+  // donc par `private.can_view_assignment()`, un `SECURITY DEFINER`.
+  //
+  // ATTENTION : ici, le raisonnement DIT que ça passe. Le client est le
+  // propriétaire de la mission (`m.client_id = auth.uid()`) et le statut initial
+  // est `pending` — or `can_view_assignment` accepte exactement ces deux cas.
+  // C'est ce qui rend le piège si dangereux : sur `missions`, le même
+  // raisonnement disait vrai, et l'appel renvoyait 403.
+  //
+  // La cause de P1 n'a jamais été ÉTABLIE. On ne la suppose donc pas résolue
+  // par analogie : on retire le `.select()`, et la preuve viendra du test
+  // fonctionnel, pas d'un raisonnement.
+  //
+  // Aucun appelant n'a besoin de la ligne créée. L'agent affecté la verra
+  // apparaître dans la liste, relue par la politique de SELECT — celle-là est
+  // utilisée partout et fonctionne. La signature rend donc `void`, comme
+  // `createMission`, pour qu'un futur appelant ne compte pas sur une valeur
+  // qui n'est plus fournie.
   async createAssignment(
     assignment: Omit<TableInsert<'mission_assignments'>, 'status'>,
   ) {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('mission_assignments')
-      .insert(assignment)
-      .select()
-      .single();
+      .insert(assignment);
 
     if (error) throw error;
-    return data;
   },
 
   // Accepter une affectation
@@ -345,5 +390,35 @@ export const missionsService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Affectations d'une mission, pour le client qui la possède.
+   *
+   * ⚠️ NE PAS IMBRIQUER `agent_profiles(*, profiles(*))` ICI.
+   *
+   * C'est exactement le motif du défaut du 2026-09-27, et il faut le dire deux
+   * fois parce qu'il est tentant : `profiles` n'est pas lisible par un client —
+   * la politique « Profiles are viewable by owner or admin » ne l'ouvre qu'à
+   * l'intéressé et à l'administrateur.
+   *
+   * Sur une imbrication, PostgREST n'échoue PAS : il renvoie `null` pour la
+   * ressource filtrée. Le résultat est donc une affectation sans nom, sans
+   * erreur, sans journal — et l'écran affiche un prestataire fantôme. Un
+   * « aucun prestataire trouvé » et un « nom manquant » se ressemblent assez
+   * pour qu'on y cherche un problème de données pendant une demi-journée.
+   *
+   * On ne demande donc que les colonnes de la table. C'est suffisant pour
+   * afficher une affectation, et c'est la seule forme qui tienne.
+   */
+  async listerAffectationsMission(missionId: string) {
+    const { data, error } = await supabase
+      .from('mission_assignments')
+      .select('id, mission_id, agent_id, company_id, status, proposed_rate, created_at')
+      .eq('mission_id', missionId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as MissionAssignmentSummary[];
   },
 };

@@ -43,6 +43,22 @@ export default function ClientLayout() {
             ),
           }}
         />
+        {/*
+         * `href: null` RETIRE LA ROUTE DE LA BARRE D'ONGLETS.
+         *
+         * Un fichier de cet espace apparaît dans la navigation par défaut, y
+         * compris quand il s'agit d'un écran d'action. Sans cette ligne,
+         * l'application afficherait un onglet « Réservation » qui vide l'écran,
+         * alors qu'aucune réservation n'est possible sans passer par la
+         * recherche. C'est un onglet qui ne mène nulle part.
+         *
+         * Les deux écrans d'action sont déclarés ici : `mission/new` était
+         * absent de ce layout depuis l'origine — même cas, même conséquence,
+         * et il n'avait été signalé que par un rapport.
+         */}
+        <Tabs.Screen name="prestation/[id]" options={{ href: null, title: 'Réservation' }} />
+        <Tabs.Screen name="mission/[id]" options={{ href: null, title: 'Suivi' }} />
+        <Tabs.Screen name="mission/new" options={{ href: null, title: 'Nouvelle mission' }} />
       </Tabs>
     </ProtectedRoute>
   );

@@ -1,4 +1,4 @@
-import type { MissionStatus } from '@/types';
+import type { AssignmentStatus, MissionStatus } from '@/types';
 
 /*
  * Tokens issus de `design/DESIGN.md` (export des variables Figma).
@@ -220,3 +220,39 @@ export const PROVIDER_STATUSES = {
   ACTIVE: 'active',
   SUSPENDED: 'suspended',
 } as const;
+
+/**
+ * Libellé lisible d'un statut d'affectation.
+ *
+ * `pending` est « En attente de réponse » et non « En attente » : la formule
+ * courte ne dit pas de QUELLE réponse on attend. Or l'attente est celle du
+ * prestataire, qui n'a pas encore répondu.
+ *
+ * Le client et l'agent lisent le MÊME libellé. Un statut affiché différemment
+ * selon qui regarde est une source de litiges : « vous aviez dit en attente »,
+ * alors que les deux voyaient la même ligne.
+ */
+export const ASSIGNMENT_STATUS_LABELS = {
+  pending: 'En attente de réponse',
+  accepted: 'Acceptée',
+  rejected: 'Refusée',
+  completed: 'Terminée',
+} as const satisfies Record<AssignmentStatus, string>;
+
+/**
+ * Couleur d'un badge selon le statut d'une affectation.
+ *
+ * `rejected` est en `error` et non en `warning` : un refus est une décision,
+ * pas un retard. L'inverse donnerait au prestataire l'impression qu'il peut
+ * encore répondre.
+ */
+export const ASSIGNMENT_STATUS_VARIANTS = {
+  pending: 'warning',
+  accepted: 'success',
+  rejected: 'error',
+  completed: 'primary',
+} as const satisfies Record<
+  AssignmentStatus,
+  'primary' | 'success' | 'warning' | 'error'
+>;
+

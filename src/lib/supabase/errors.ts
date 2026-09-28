@@ -145,6 +145,39 @@ export function toUserFacingError(
     };
   }
 
+  // DOUBLON SUR UNE AFFECTATION — `23505`, 2026-09-28.
+  //
+  // Les index `mission_assignments_agent_unique` et
+  // `mission_assignments_company_unique` interdisent de réserver deux fois le
+  // même prestataire pour la même mission. C'est une règle saine, et elle
+  // s'applique SANS LE DIRE : le serveur répond 23505 et rien d'autre.
+  //
+  // Sans cette branche, le message générique s'affichait — « Impossible de
+  // créer la réservation » — alors que la tentative précédente avait RÉUSSI.
+  // La conclusion tirable était « le serveur est cassé », et la vraie cause,
+  // « vous avez déjà réservé ce prestataire », ne disait rien.
+  //
+  // C'est exactement le piège du 2026-09-26, inversé : là, un message trop
+  // précis désignait la mauvaise fonctionnalité ; ici, un message trop flou
+  // désigne le bon écran et aucune action.
+  //
+  // LE NOM DE L'INDEX N'EST PAS RÉVÉLÉ, ET LA TABLE EST EXIGÉE DANS LE TEST :
+  // `23505` peut venir d'ailleurs — un email déjà pris, un rôle déjà
+  // attribué — et affirmer « affectation » dans ces cas serait un nouveau
+  // mensonge, plus petit que le précédent.
+  if (
+    (code === '23505' ||
+      lowered.includes('duplicate key value violates unique constraint')) &&
+    lowered.includes('mission_assignments')
+  ) {
+    return {
+      message:
+        'Ce prestataire est déjà affecté à cette mission. Choisissez une autre mission, ou un autre prestataire.',
+      technical,
+      isServiceIssue: false,
+    };
+  }
+
   if (lowered.includes('rate limit') || code === 'over_request_rate_limit') {
     return {
       message: 'Trop de tentatives. Patientez quelques minutes avant de réessayer.',
