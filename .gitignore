@@ -34,6 +34,15 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+# ⚠️ L'EXEMPTION PRÉCÉDENTE NE COUVRAIT QUE `.env.example`.
+#
+# `test-parcours.js` a besoin de `.env.test`. Son modèle était donc IGNORÉ lui
+# aussi : le fichier qui explique quelles variables remplir n'était pas versionné,
+# et les valeurs attendues n'étaient lisibles que dans le code du test.
+#
+# Un modèle d'environnement doit être versionné. C'est la seule chose qu'on peut
+# publier sans risque : des noms de variables, jamais un mot de passe.
+!.env.test.example
 
 # typescript
 *.tsbuildinfo
