@@ -183,7 +183,18 @@ order by table_name, column_name;
 
 -- -----------------------------------------------------------------------------
 -- CONTRÔLE 7 — Fonctions de transition d'état
--- Attendu : 8 fonctions publiques accordées à authenticated, refusées à anon.
+--
+-- ATTENDU : 11 fonctions publiques, accordées à `authenticated`, refusées à
+-- `anon`.
+--
+-- ⚠️ LES TROIS DERNIÈRES ONT ÉTÉ AJOUTÉES LE 2026-09-28. Ce contrôle n'en
+-- listait que 8 : il ne les voyait pas, et ne pouvait donc pas signaler leur
+-- absence. Une liste de noms figée ne prouve rien sur ce qui n'y figure pas.
+--
+--   pointer_arrivee  (02200) — l'arrivée fait passer la mission en in_progress
+--   pointer_depart   (02200) — le départ emporte le rapport
+--   cloturer_mission (02400) — mission ET affectations, en une opération
+--
 -- La lecture des droits passe par pg_proc.proacl, plus fiable que
 -- has_function_privilege() qui est ambigu avec un nom de rôle en texte.
 -- Valeur de droit_attribuee : 'EXECUTE' = autorisé, vide = refusé.
@@ -216,15 +227,31 @@ where n.nspname = 'public'
   and p.proname in (
     'publish_mission', 'cancel_mission', 'complete_mission',
     'mark_mission_paid', 'open_mission_dispute',
-    'accept_assignment', 'reject_assignment', 'complete_assignment'
+    'accept_assignment', 'reject_assignment', 'complete_assignment',
+    'pointer_arrivee', 'pointer_depart', 'cloturer_mission'
   )
 order by p.proname;
 
 -- -----------------------------------------------------------------------------
 -- CONTRÔLE 8 — Helpers RLS privés présents et non exécutables par anon
--- Attendu : 8 fonctions dans le schéma private (6 helpers d'origine +
--- 2 fonctions de transition ajoutées par la migration 00400).
--- Attendu : 8 lignes.
+--
+-- ATTENDU : 15 fonctions dans le schéma private.
+--
+-- ⚠️ CE CONTRÔLE EN LISTAIT 8. Les SEPT suivantes ont été ajoutées au fil des
+-- migrations et n'étaient jamais vérifiées — donc leur absence serait passée
+-- inaperçue, exactement comme pour le contrôle 7.
+--
+--   can_assign_mission        (00600, restaurée par 01200)
+--   force_mission_client_id   (01600) — trigger, écrase le client_id
+--   liste_agents_publics      (02000) — annuaire, en lecture seule
+--   prestataires_par_ids      (02100) — nom des prestataires par identifiants
+--   pointer_arrivee           (02200)
+--   pointer_depart            (02200)
+--   cloturer_mission          (02400)
+--
+-- Les trois fonctions `set_updated_at`, `handle_new_auth_user` et
+-- `create_wallet_for_profile` sont des déclencheurs et ne figurent pas ici :
+-- elles n'ont pas vocation à être appelées.
 -- -----------------------------------------------------------------------------
 select
   '8. Helpers privés' as controle,
@@ -246,7 +273,10 @@ where n.nspname = 'private'
   and p.proname in (
     'has_role', 'is_admin', 'can_view_mission',
     'can_view_assignment', 'is_assignment_agent', 'can_review_mission',
-    'transition_mission', 'transition_assignment'
+    'transition_mission', 'transition_assignment',
+    'can_assign_mission', 'force_mission_client_id',
+    'liste_agents_publics', 'prestataires_par_ids',
+    'pointer_arrivee', 'pointer_depart', 'cloturer_mission'
   )
 order by p.proname;
 
