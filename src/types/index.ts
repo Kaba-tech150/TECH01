@@ -112,11 +112,22 @@ export type AgentProfileInsertableFields = Pick<
  * la charge utile. `TableUpdate<'agent_profiles'>` avait laissé passer la
  * colonne parce qu'il reproduit le schéma complet, pas le `grant`.
  *
+ * CORRECTION APPORTÉE LE 2026-09-28 : ce type ne listait que 4 colonnes alors que
+ * le `grant` en accorde 6. Il était donc plus étroit que le droit — ce qui est
+ * sans danger — mais ce n'était PAS la « contrepartie exacte » qu'il prétendait
+ * être, et `is_available` manquant rendait la gestion des disponibilités
+ * impossible à écrire sans élargir ce type ailleurs.
+ *
  * Toute évolution du `grant` doit être répercutée ici, dans les deux sens.
  */
 export type AgentProfileUpdatableFields = Pick<
   TableUpdate<'agent_profiles'>,
-  'certification_number' | 'hourly_rate' | 'zone' | 'bio'
+  | 'certification_number'
+  | 'certification_expiry'
+  | 'hourly_rate'
+  | 'zone'
+  | 'bio'
+  | 'is_available'
 >;
 
 export type { Json };

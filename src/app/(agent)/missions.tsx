@@ -1,16 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button, Card, Typography } from '@/components/ui';
-import { COLORS, SPACING } from '@/constants';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 import {
   CarteAffectation,
   indexerPrestataires,
   useMesAffectations,
   useMissionErrorMessage,
   useNomsPrestataires,
+  usePointerAffectation,
   useRepondreAffectation,
+  type Pointage,
   type ReponseAffectation,
 } from '@/features/missions';
 
@@ -36,6 +38,15 @@ export default function AgentMissions() {
   const { data: affectations, isPending, isError, error, refetch } =
     useMesAffectations();
   const repondre = useRepondreAffectation();
+  const pointer = usePointerAffectation();
+
+  /*
+   * UN BROUILLON DE RAPPORT PAR AFFECTATION, ET NON UN TEXTE UNIQUE.
+   *
+   * L'agent peut avoir deux vacations ouvertes. Un `useState<string>` unique
+   * lui ferait perdre le rapport du premier au moment où il écrit le second.
+   */
+  const [rapports, setRapports] = useState<Record<string, string>>({});
 
   /*
    * LES IDENTIFIANTS SONT EXTRAITS AVANT LA REQUÊTE DE NOMS.
@@ -88,9 +99,33 @@ export default function AgentMissions() {
     }
   };
 
+  const pointerVacation = async (affectationId: string, pointage: Pointage) => {
+    setErreurReponse(null);
+    try {
+      await pointer.mutateAsync({
+        affectationId,
+        pointage,
+        rapport: rapports[affectationId],
+      });
+      // Le brouillon est effacé APRÈS l'écriture réussie : le conserver
+      // donnerait l'illusion que le rapport n'est pas encore parti.
+      setRapports((actuels) => {
+        const suite = { ...actuels };
+        delete suite[affectationId];
+        return suite;
+      });
+    } catch (e) {
+      setErreurReponse(
+        messageErreur(e, 'enregistrer', 'Impossible d’enregistrer votre pointage.'),
+      );
+    }
+  };
+
   const enCours = repondre.isPending
     ? repondre.variables?.affectationId
-    : undefined;
+    : pointer.isPending
+      ? pointer.variables?.affectationId
+      : undefined;
 
   const enTete = (
     <>
@@ -182,6 +217,12 @@ export default function AgentMissions() {
               affectation.agent_id ?? affectation.company_id ?? '';
             const mission = affectation.missions;
             const enAttente = affectation.status === 'pending';
+            const acceptee =
+              affectation.status === 'accepted' ||
+              affectation.status === 'completed';
+            const pointe = Boolean(affectation.check_in_time);
+            const sorti = Boolean(affectation.check_out_time);
+            const occupe = enCours !== undefined;
 
             return (
               <CarteAffectation
@@ -194,13 +235,20 @@ export default function AgentMissions() {
                 }
                 titreMission={mission?.title}
                 lieu={mission ? `${mission.city} · ${mission.address}` : undefined}
+                checkInTime={affectation.check_in_time}
+                checkOutTime={affectation.check_out_time}
+                rapport={affectation.report}
               >
                 {/*
-                 * LES DEUX BOUTONS N'APPARAISSENT QUE SUR UNE DEMANDE `pending`.
+                 * LES BOUTONS SUIVENT L'ÉTAT RÉEL DE LA VACATION.
                  *
-                 * La matrice de transitions refuse toute autre réponse, et un
-                 * bouton qui échoue est pire qu'un bouton absent : il fait
-                 * perdre confiance à l'écran entier.
+                 * `is_assignment_agent` refuse toute écriture tant que le
+                 * statut n'est pas `accepted` : proposer « Pointer mon arrivée »
+                 * sur une demande en attente serait un bouton qui échoue.
+                 *
+                 * Un seul pointage est proposé à la fois : arrivée, puis départ.
+                 * Les deux ensemble permettraient de sortir d'une vacation qu'on
+                 * n'a jamais commencée.
                  */}
                 {enAttente ? (
                   <>
@@ -208,13 +256,47 @@ export default function AgentMissions() {
                       title="Accepter"
                       icon="check"
                       onPress={() => void repondreA(affectation.id, 'accepter')}
-                      disabled={enCours !== undefined}
+                      disabled={occupe}
                     />
                     <Button
                       title="Refuser"
                       variant="outline"
                       onPress={() => void repondreA(affectation.id, 'refuser')}
-                      disabled={enCours !== undefined}
+                      disabled={occupe}
+                    />
+                  </>
+                ) : null}
+
+                {acceptee && !pointe && !sorti ? (
+                  <Button
+                    title="Pointer mon arrivée"
+                    icon="login"
+                    onPress={() => void pointerVacation(affectation.id, 'arrivee')}
+                    disabled={occupe}
+                  />
+                ) : null}
+
+                {acceptee && pointe && !sorti ? (
+                  <>
+                    <TextInput
+                      style={styles.rapport}
+                      placeholder="Rapport de fin de vacation (facultatif)"
+                      placeholderTextColor={COLORS.textLight}
+                      value={rapports[affectation.id] ?? ''}
+                      onChangeText={(texte) =>
+                        setRapports((actuels) => ({
+                          ...actuels,
+                          [affectation.id]: texte,
+                        }))
+                      }
+                      multiline
+                      numberOfLines={3}
+                    />
+                    <Button
+                      title="Pointer mon départ"
+                      icon="logout"
+                      onPress={() => void pointerVacation(affectation.id, 'depart')}
+                      disabled={occupe}
                     />
                   </>
                 ) : null}
@@ -257,6 +339,19 @@ const styles = StyleSheet.create({
   },
   texte: {
     lineHeight: 20,
+  },
+  rapport: {
+    minHeight: 72,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    textAlignVertical: 'top',
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    backgroundColor: COLORS.background,
   },
 });
 

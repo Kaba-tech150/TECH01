@@ -9,7 +9,10 @@ export {
 export {
   AGENT_ASSIGNMENTS_KEY,
   useMesAffectations,
+  usePointerAffectation,
   useRepondreAffectation,
+  useTerminerMission,
+  type Pointage,
   type ReponseAffectation,
 } from './useAgentAssignments';
 export { CarteAffectation, type CarteAffectationProps } from './CarteAffectation';

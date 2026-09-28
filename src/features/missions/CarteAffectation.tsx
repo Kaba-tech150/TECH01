@@ -37,7 +37,20 @@ export type CarteAffectationProps = {
   /** Présent côté agent, où la mission est imbriquée. */
   titreMission?: string;
   lieu?: string;
-  /** Actions : accepter/refuser côté agent, rien côté client. */
+  /**
+   * Pointages et rapport.
+   *
+   * RENDUS PAR LE MÊME COMPOSANT DES DEUX CÔTÉS : le client suit sa mission, et
+   * il doit voir les horaires de vacation de son prestataire. Les afficher dans
+   * une version agent-only obligerait à dupliquer la mise en forme.
+   *
+   * Les champs absents sont OMIS, jamais affichés « — » : tant qu'un agent n'a
+   * pas pointé, afficher une cellule vide ferait croire à une donnée manquante.
+   */
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  rapport?: string | null;
+  /** Actions : accepter/refuser côté agent, pointer en vacation, rien côté client. */
   children?: ReactNode;
 };
 
@@ -58,6 +71,9 @@ export function CarteAffectation({
   prestataire,
   titreMission,
   lieu,
+  checkInTime,
+  checkOutTime,
+  rapport,
   children,
 }: CarteAffectationProps) {
   /*
@@ -98,6 +114,37 @@ export function CarteAffectation({
 
       {lieu ? <Text style={styles.lieu}>{lieu}</Text> : null}
 
+      {/*
+       * LES POINTAGES SONT OMIS TANT QU'ILS N'EXISTENT PAS.
+       *
+       * Afficher « Arrivée · — » laisserait croire à une donnée manquante.
+       * `String()` plutôt qu'un `as` : le transtype ferait taire `tsc` sans
+       * rien garantir, alors que la conversion est ici un fait.
+       */}
+      {Boolean(checkInTime || checkOutTime) ? (
+        <View style={styles.pointages}>
+          {Boolean(checkInTime) ? (
+            <Text style={styles.pointageLigne}>
+              Arrivée · {formatDate(String(checkInTime), 'short')}
+            </Text>
+          ) : null}
+          {Boolean(checkOutTime) ? (
+            <Text style={styles.pointageLigne}>
+              Départ · {formatDate(String(checkOutTime), 'short')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {Boolean(rapport) ? (
+        <View style={styles.rapport}>
+          <Typography variant="caption" color={COLORS.textSecondary}>
+            RAPPORT DE L’AGENT
+          </Typography>
+          <Text style={styles.rapportTexte}>{rapport}</Text>
+        </View>
+      ) : null}
+
       <View style={styles.pied}>
         <Text style={styles.date}>
           Demandée le {formatDate(createdAt, 'short')}
@@ -133,6 +180,30 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILIES.regular,
     fontSize: FONT_SIZES.sm,
     color: COLORS.primary,
+  },
+  pointages: {
+    gap: 2,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.sm,
+    paddingTop: SPACING.sm,
+  },
+  pointageLigne: {
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  rapport: {
+    gap: SPACING.xs,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  rapportTexte: {
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.md,
+    lineHeight: 20,
+    color: COLORS.text,
   },
   pied: {
     borderTopWidth: 1,

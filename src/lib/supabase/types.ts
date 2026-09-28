@@ -689,6 +689,42 @@ export interface Database {
           tarif_horaire: number | null;
         }[];
       };
+      /**
+       * Pointer l'arrivée d'un agent — migration 20260928002200.
+       *
+       * Remplace l'écriture directe de `check_in_time`. La fonction fait
+       * passer la mission `accepted` → `in_progress` DANS LA MÊME OPÉRATION,
+       * ce qu'un `UPDATE` ne pouvait pas garantir.
+       */
+      pointer_arrivee: {
+        Args: { target_assignment_id: string };
+        Returns: Database['public']['Enums']['mission_status'];
+      };
+      /**
+       * Pointer le départ et rédiger le rapport — migration 20260928002200.
+       *
+       * La fonction refuse un départ sans arrivée, et normalise le rapport :
+       * une chaîne de spaces devient `NULL`, pas un rapport vide.
+       */
+      pointer_depart: {
+        Args: { target_assignment_id: string; p_rapport: string | null };
+        Returns: Database['public']['Enums']['assignment_status'];
+      };
+      /**
+       * Clôturer la mission ET ses affectations — migration 20260928002400.
+       *
+       * Une seule opération pour deux statuts qui doivent dire la même chose.
+       * `complete_mission` ne suffisait pas : elle ne touche que la mission, et
+       * l'affectation restait `accepted` — visible par le client comme par
+       * l'agent.
+       *
+       * La fonction REFUSE la clôture tant qu'un prestataire n'a pas pointé son
+       * départ. C'est vérifié côté serveur, pas dans l'écran.
+       */
+      cloturer_mission: {
+        Args: { target_mission_id: string };
+        Returns: Database['public']['Enums']['mission_status'];
+      };
       accept_assignment: {
         Args: { target_assignment_id: string };
         Returns: Database['public']['Enums']['assignment_status'];

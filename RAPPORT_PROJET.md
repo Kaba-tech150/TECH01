@@ -369,9 +369,15 @@ racine, qui divergent.
 |---|---|
 | publier | `publish_mission` |
 | annuler | `cancel_mission` |
-| terminer | `complete_mission` |
+| clôturer **(mission + affectations)** | `cloturer_mission` |
 | marquer payée | `mark_mission_paid` |
 | ouvrir un litige | `open_mission_dispute` |
+
+> `complete_mission` existe toujours dans le catalogue, mais **plus rien ne
+> l'appelle**. Elle ne fait avancer que la mission : c'est exactement ce qui
+> laissait le client avec « Terminée » sur le badge et « Acceptée » sur
+> l'affectation. `cloturer_mission` la remplace et fait les deux dans la même
+> opération.
 
 **Affectation** — `pending`, `accepted`, `rejected`, `completed`
 
@@ -512,21 +518,23 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 
 ## Fonctionnalités restantes
 
-### Étape 6 — à finir
+### Étape 6 — codée, un test la sépare de « terminée »
 
-- **[V]** Sélection : carte désormais actionnable, écran de réservation écrit
-- **[V]** Réservation : publication et `createAssignment` écrits
-- **[V]** **Test fonctionnel de bout en bout** — c'est ce qui manque, et c'est
-  désormais le seul obstacle de l'étape
-- **[V]** Suivi : voir la mission et son prestataire — non commencé
+- **[V]** Sélection : carte actionnable, écran de réservation
+- **[V]** Réservation : publication et `createAssignment`
+- **[V]** Suivi : voir la mission et son prestataire
+- **[V]** Clôture : `cloturer_mission`, mission et affectations ensemble
+- **[X]** **Test fonctionnel de bout en bout** — seul obstacle restant
 
-### Étape 7 — parcours agent
+### Étape 7 — codée en entier, **rien n'est vérifié à l'écran**
 
 - **[V]** Documents justificatifs — table `documents` existante, aucun écran
-- **[V]** Disponibilités — `is_available` existe dans le schéma, aucun écran
+- **[V]** Disponibilités — `is_available` existe dans le schéma
 - **[V]** Réception et liste des missions
 - **[V]** Acceptation et refus
 - **[V]** Check-in / check-out et rapport
+- **[X]** **Aucun de ces cinq écrans n'a été ouvert.** C'est le même vide que
+  l'étape 6, mais ici il porte sur tout le parcours agent.
 
 ### Étapes 8 à 13
 
@@ -543,11 +551,11 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 
 ## Problèmes rencontrés
 
-**Cinq défauts ont survécu à une chaîne de contrôles entièrement verte.** Aucun
+**Dix défauts ont survécu à une chaîne de contrôles entièrement verte.** Aucun
 n'était détectable de l'extérieur. Ils sont listés par gravité, avec la cause
 **ÉTABLIE** ou **NON ÉTABLIE** — et une cause non établie n'est jamais inventée.
 
-### Les six défauts invisibles
+### Les dix défauts invisibles
 
 | # | Défaut | Pourquoi aucun contrôle ne le voyait | Cause |
 |---|---|---|---|
@@ -557,6 +565,10 @@ n'était détectable de l'extérieur. Ils sont listés par gravité, avec la cau
 | 4 | `profiles!inner(full_name, city, postal_code)` | **aucun contrôle n'existait** ; et `profiles` n'a ni `city` ni `postal_code` | **[V] ÉTABLIE** |
 | 5 | politique de lecture des agents fermée aux clients | **aucun contrôle n'existait** ; invisible aussi à `check:supabase`, qui ne teste que `anon` | **[V] ÉTABLIE** |
 | 6 | **`company_profiles` fermée aux clients** | le contrôle 21 ne regarde que `agent_profiles` — la table que `01900` venait de corriger | **[V] ÉTABLIE** |
+| 7 | matrice sans ligne `accepted` | la fonction **existait** et ses droits étaient accordés : rien ne signalait une transition manquante | **[V] ÉTABLIE** |
+| 8 | pointages déclarés `STABLE` | le contrôle mesurait l'**existence** et les droits — jamais la **volatilité** | **[V] ÉTABLIE** |
+| 9 | mission et affectation closes par deux acteurs différents | chaque statut était juste, et aucun contrôle ne les comparait | **[V] ÉTABLIE** |
+| 10 | `pointer_depart` à deux paramètres | le **diagnostic** envoyait un seul argument : il s'accusait lui-même, et le contrôle 25 ne teste que `proname` | **[V] ÉTABLIE** |
 
 **Le motif est toujours le même :** une politique qui ferme à un client ferme
 aussi à `anon`, donc le contrôle automatique ne peut pas la voir. Une base
@@ -831,7 +843,13 @@ Quatre règles en découlent, et elles s'appliquent à tout contrôle ajouté :
 | 2026-09-28 | `23505` traduit dans `errors.ts` et doublon bloqué avant le clic : un index unique interdit la double réservation, et rien ne le disait à l'écran |
 | 2026-09-28 | **DÉFAUT 6 trouvé** : `company_profiles` fermée aux clients. **La recherche n'a jamais affiché une société**, et le test du 27/09 l'a manqué parce qu'il cherchait un agent. Migration `20260928002100` écrite : ouvre les sociétés ET ajoute `prestataires_par_ids`. Contrôle 22 ajouté |
 | 2026-09-28 | **Étape 7 + dernier jalon de l'étape 6 codés** : écran agent (voir / accepter / refuser), écran de suivi client, `CarteAffectation` partagé, `Card` rendu actionnable. `typecheck`, `eslint` et `expo export` verts. **Non testés à l'écran** |
+| 2026-09-28 | **DÉFAUT 10 trouvé — dans le DIAGNOSTIC, pas dans l'application** : `pointer_depart` a deux paramètres (`target_assignment_id` **et** `p_rapport`) ; le script de contrôle n'en envoyait qu'un. PostgREST résout par signature, donc `PGRST202 fonction introuvable` — et le script concluait « pas installée », sur une fonction parfaitement installée et correctement câblée. Le contrôle 25 ne le voyait pas non plus : il ne teste que `proname`. **Le corps d'appel n'est pas un détail, c'est un premier argument** |
+| 2026-09-28 | **DÉFAUT 9 trouvé** : le client clôturait la mission, l'affectation restait `accepted` — « Terminée » d'un côté, « Acceptée » de l'autre, dans le même écran. Cause : `transition_mission` n'écoute que le client, `transition_assignment` que l'agent affecté, et **aucun geste unique ne faisait avancer les deux**. `complete_assignment` n'a jamais été appelée, comme `complete_mission` avant elle. Migration `20260928002400` : `cloturer_mission` fait les deux transitions ensemble, et **refuse tant qu'un prestataire n'a pas pointé son départ**. Contrôle **26** ajouté |
+| 2026-09-28 | **DÉFAUT 8 trouvé** : les fonctions de pointage déclarées `STABLE` — donc annoncées comme sans effet de bord. Le `SELECT ... FOR UPDATE` de la fonction interne échouait par « read-only transaction », remonté en HTTP 405, un statut qui évoque le réseau. Migration `20260928002300`. **Contrôle 25 durci : il vérifie désormais la VOLATILITÉ, plus seulement l'existence** |
+| 2026-09-28 | **DÉFAUT 7 trouvé** : la matrice de `transition_mission` ne comportait **aucune ligne pour `accepted`**. Une mission acceptée était un cul-de-sac : ni annulation, ni litige, ni clôture. `complete_mission` existait, avait ses droits, et n'a jamais été appelée — une fonction inutilisée est parfaitement conforme. Migration `20260928002200` : matrice réparée, `pointer_arrivee` et `pointer_depart` ajoutées. Contrôle **25** ajouté |
+| 2026-09-28 | **Décision métier : le client clôture la mission, pas l'agent.** L'arrivée de l'agent fait passer la mission `accepted` → `in_progress` dans la MÊME opération ; l'agent termine SA vacation ; le client confirme. Un agent qui pourrait clore pourrait le faire avant l'heure, et le temps facturé s'arrêterait |
 | 2026-09-28 | `mission/new` déclaré dans le `_layout` client avec `href: null` : il apparaissait comme un onglet fantôme depuis l'origine |
+| 2026-09-28 | **Check-in / check-out et rapport** codés. `.select()` retiré de `checkIn` et `checkOut` — troisième occurrence du motif de P1, attrapé avant câblage. Contrôle **23** ajouté : les droits d'UPDATE des 7 colonnes de pointage n'étaient mesurés par rien, alors que le contrôle 20 mesurait ceux de l'INSERT |
 | 2026-09-28 | **Migration `20260928002100` APPLIQUÉE.** Contrôle 22 au vert : sociétés lisibles, `FORCE` actif sur les 2 tables, fonction publique présente. Contrôle 4 toujours à 37 — la politique a **remplacé** l'ancienne. **22 contrôles sur 22** |
 
 ---

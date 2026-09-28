@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { missionsService } from '@/services';
+// Import DIRECT, jamais par le baril : `./useMissions` réexporte ce fichier via
+// `./index`, et le passer par le baril refermerait le cycle — le défaut S8.
+import { CLIENT_MISSIONS_KEY } from './useMissions';
 
 /**
  * Clé de cache des affectations de l'agent connecté.
@@ -37,6 +40,83 @@ export function useMesAffectations() {
 
 /** Ce qu'un agent répond à une demande. */
 export type ReponseAffectation = 'accepter' | 'refuser';
+
+/** Arrivée ou départ. */
+export type Pointage = 'arrivee' | 'depart';
+
+/**
+ * Pointer une arrivée ou un départ, et rédiger le rapport.
+ *
+ * `is_assignment_agent` exige le statut `accepted` ou `completed` : pointer
+ * avant d'avoir accepté est REFUSÉ par la base. L'écran ne propose donc le
+ * bouton que sur une affectation acceptée — un bouton qui échoue est pire
+ * qu'un bouton absent.
+ *
+ * La géolocalisation arrive à l'étape 11. Les colonnes sont déjà accordées et
+ * nullables : ne rien envoyer est exact, pas approximatif.
+ */
+export function usePointerAffectation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      affectationId,
+      pointage,
+      rapport,
+    }: {
+      affectationId: string;
+      pointage: Pointage;
+      rapport?: string;
+    }) =>
+      pointage === 'arrivee'
+        ? missionsService.pointerArrivee(affectationId)
+        : missionsService.pointerDepart(affectationId, rapport),
+
+    onSuccess: () => {
+      /*
+       * LES DEUX LISTES SONT INVALIDÉES, ET LE SECOND EFFET EST LE PLUS UTILE.
+       *
+       * Pointer l'arrivée fait passer la mission `accepted` → `in_progress`.
+       * Or la liste de l'agent imbrique `missions(...)` : sans cette
+       * invalidation, l'écran afficherait encore « Acceptée » alors que la
+       * mission a démarré. C'est l'agent qui voit l'effet de son propre geste,
+       * donc c'est le premier écran à se rafraîchir.
+       */
+      void queryClient.invalidateQueries({ queryKey: AGENT_ASSIGNMENTS_KEY });
+    },
+  });
+}
+
+/**
+ * Clôturer la mission, côté client.
+ *
+ * UN SEUL GESTE POUR DEUX STATUTS.
+ *
+ * `cloturer_mission` fait passer la mission ET ses affectations à `completed`
+ * dans la même opération. Avant elle, `complete_mission` ne touchait que la
+ * mission : le client voyait « Terminée » sur le badge, et « Acceptée » sur
+ * l'affectation, dans le même écran. L'agent voyait « Acceptée » du sien.
+ *
+ * L'AGENT NE TERMINE JAMAIS LA MISSION. C'est une décision métier, écrite dans
+ * la matrice de `00400` comme ici : un agent qui pourrait clore pourrait le
+ * faire avant l'heure, et le temps facturé s'arrêterait.
+ *
+ * L'agent écrit son rapport et pointe son départ ; le client, seul juge de ce
+ * qui a été fait, confirme.
+ */
+export function useTerminerMission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (missionId: string) => missionsService.cloturerMission(missionId),
+
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['missions'] });
+      void queryClient.invalidateQueries({ queryKey: CLIENT_MISSIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: AGENT_ASSIGNMENTS_KEY });
+    },
+  });
+}
 
 /**
  * Accepter ou refuser une affectation.

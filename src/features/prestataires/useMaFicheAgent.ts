@@ -21,6 +21,40 @@ export function useMaFicheAgent(userId: string | undefined) {
 }
 
 /**
+ * Passer la fiche en disponible ou en indisponible.
+ *
+ * MUTATION DISTINCTE DE `useEnregistrerFicheAgent`, ET VOLONTAIREMENT.
+ *
+ * Basculer un interrupteur ne doit pas réécrire le formulaire. Si les deux
+ * passaient par la même mutation, un agent qui n'a touché qu'à son statut
+ * verrait ses autres champs réécrits avec les valeurs du formulaire — dont des
+ * champs qu'il a volontairement laissés vides.
+ *
+ * Les deux caches sont invalidés : la fiche, et la liste des prestataires, car
+ * la recherche affiche le badge « Disponible ».
+ */
+export function useChangerDisponibilite() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ficheId,
+      isAvailable,
+    }: {
+      ficheId: string;
+      isAvailable: boolean;
+    }) => {
+      await providersService.setDisponibilite(ficheId, isAvailable);
+      return isAvailable;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: MA_FICHE_KEY });
+      void queryClient.invalidateQueries({ queryKey: ['providers'] });
+    },
+  });
+}
+
+/**
  * Les deux charges utiles viennent de `prestataireSchema`, qui est leur source
  * UNIQUE. Les déclarer ici aussi aurait permis qu'elles divergent — et c'est
  * précisément la duplication qui avait produit le bug : deux listes de

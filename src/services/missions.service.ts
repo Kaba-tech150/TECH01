@@ -56,6 +56,17 @@ export type MissionAssignmentSummary = {
   company_id: string | null;
   status: AssignmentStatus;
   proposed_rate: number | null;
+  /**
+   * Pointages, lisibles par le client comme par l'agent.
+   *
+   * `grant select` est accordé AU NIVEAU TABLE sur `mission_assignments`, et la
+   * politique `can_view_assignment` ouvre la ligne au propriétaire de la
+   * mission. Le client voit donc les horaires de vacation de son prestataire —
+   * ce qui est précisément l'intérêt d'un suivi.
+   */
+  check_in_time: string | null;
+  check_out_time: string | null;
+  report: string | null;
   created_at: string;
 };
 
@@ -342,36 +353,80 @@ export const missionsService = {
     return data;
   },
 
-  // Check-in
-  async checkIn(assignmentId: string, location?: { lat: number; lng: number }) {
-    const { data, error } = await supabase
-      .from('mission_assignments')
-      .update({
-        check_in_time: new Date().toISOString(),
-        check_in_location_lat: location?.lat,
-        check_in_location_lng: location?.lng,
-      })
-      .eq('id', assignmentId)
-      .select()
-      .single();
+  /**
+   * Pointer son arrivée.
+   *
+   * APPELLE `pointer_arrivee`, MIGRATION `20260928002200` — et non un `UPDATE`.
+   *
+   * Ce n'est pas un détail d'implémentation. L'écriture directe de
+   * `check_in_time` était autorisée par la politique, mais elle laissait la
+   * mission en `accepted` — et la matrice n'offrait AUCUNE sortie depuis cet
+   * état. Le client n'avait donc aucun moyen de terminer sa mission.
+   *
+   * La fonction écrit l'heure ET fait passer la mission `in_progress` dans la
+   * MÊME opération, et refuse l'appel par un agent non affecté.
+   *
+   * `location` reste accepté sans être exigé : la géolocalisation arrive à
+   * l'étape 11, et les colonnes sont déjà accordées et nullables. Ne rien
+   * envoyer est exact, pas approximatif.
+   */
+  async pointerArrivee(assignmentId: string): Promise<void> {
+    const { error } = await supabase.rpc('pointer_arrivee', {
+      target_assignment_id: assignmentId,
+    });
 
     if (error) throw error;
-    return data;
   },
 
-  // Check-out
-  async checkOut(assignmentId: string, location?: { lat: number; lng: number }, report?: string) {
-    const { data, error } = await supabase
-      .from('mission_assignments')
-      .update({
-        check_out_time: new Date().toISOString(),
-        check_out_location_lat: location?.lat,
-        check_out_location_lng: location?.lng,
-        report,
-      })
-      .eq('id', assignmentId)
-      .select()
-      .single();
+  /**
+   * Pointer son départ et rédiger son rapport.
+   *
+   * APPELLE `pointer_depart`, migration `20260928002200`.
+   *
+   * La fonction REFUSE un départ sans arrivée. Cette règle est écrite dans la
+   * base, et pas seulement dans l'écran : un écran qui la fait suffirait
+   * jusqu'au premier client qui parle au serveur autrement.
+   *
+   * `rapport` est joint au pointage de sortie : c'est la fin de vacation, et
+   * demander à l'agent de revenir plus tard pour écrire ce qu'il a constaté
+   * serait lui faire faire deux fois le même travail. La fonction normalise
+   * une chaîne de spaces en `NULL` : un rapport vide n'est pas un rapport.
+   */
+  async pointerDepart(assignmentId: string, rapport?: string): Promise<void> {
+    const { error } = await supabase.rpc('pointer_depart', {
+      target_assignment_id: assignmentId,
+      p_rapport: rapport ?? null,
+    });
+
+    if (error) throw error;
+  },
+
+  /**
+   * Le client clôt la mission.
+   *
+   * APPELLE `cloturer_mission`, MIGRATION `20260928002400`.
+   *
+   * `complete_mission` ne suffisait pas, et le défaut était VISIBLE : le badge
+   * de la mission passait à « Terminée » côté client, tandis que l'affectation
+   * restait `accepted` — donc l'agent voyait encore « Acceptée » de son côté, et
+   * le client aussi sur sa liste.
+   *
+   * La cause : deux transitions, deux acteurs. `transition_mission` n'écoute
+   * que le client, `transition_assignment` que l'agent affecté. Aucun geste
+   * unique ne pouvait faire avancer les deux.
+   *
+   * `cloturer_mission` fait les deux dans la MÊME opération, et REFUSE tant
+   * qu'un prestataire n'a pas pointé son départ. C'est cette condition qui
+   * protège l'agent : sans elle, un client pourrait forcer une affectation à
+   * `completed` alors que l'agent n'est jamais venu, et ne plus contester.
+   *
+   * L'AGENT NE CLÔTURE JAMAIS LUI-MÊME. Il écrit son rapport et pointe son
+   * départ ; le client, seul juge de ce qui a été fait, confirme.
+   */
+  async cloturerMission(missionId: string) {
+    const { data, error } = await supabase.rpc('cloturer_mission', {
+      target_mission_id: missionId,
+    });
 
     if (error) throw error;
     return data;
@@ -414,7 +469,9 @@ export const missionsService = {
   async listerAffectationsMission(missionId: string) {
     const { data, error } = await supabase
       .from('mission_assignments')
-      .select('id, mission_id, agent_id, company_id, status, proposed_rate, created_at')
+      .select(
+        'id, mission_id, agent_id, company_id, status, proposed_rate, check_in_time, check_out_time, report, created_at',
+      )
       .eq('mission_id', missionId)
       .order('created_at', { ascending: false });
 

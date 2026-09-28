@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ import {
   useMission,
   useMissionErrorMessage,
   useNomsPrestataires,
+  useTerminerMission,
 } from '@/features/missions';
 import { formatDate } from '@/lib/utils';
 
@@ -43,6 +44,8 @@ export default function SuiviMission() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const messageErreur = useMissionErrorMessage();
+  const terminer = useTerminerMission();
+  const [erreurCloture, setErreurCloture] = useState<string | null>(null);
 
   const missionId = typeof id === 'string' && id.length > 0 ? id : null;
 
@@ -70,6 +73,37 @@ export default function SuiviMission() {
 
   const noms = useNomsPrestataires(ids);
   const index = useMemo(() => indexerPrestataires(noms.data), [noms.data]);
+
+  /*
+   * LE BOUTON DE CLÔTURE N'APPARAÎT QU'UNE VACATION EST TERMINÉE.
+   *
+   * Deux conditions, et toutes deux nécessaires :
+   *
+   *   - la mission est `in_progress` : c'est la seule condition que la matrice
+   *     accepte pour `complete_mission`. L'agent la fait passer de `accepted` à
+   *     `in_progress` en pointant son arrivée.
+   *   - au moins un agent a pointé son DÉPART. Sans cela, le client clôturerait
+   *     une mission dont personne n'a terminé le service.
+   *
+   * Un bouton qui échoue est pire qu'un bouton absent : il fait perdre
+   * confiance à tout l'écran. Les deux conditions sont donc vérifiées ici, et
+   * la troisième — l'autorisation — reste dans la base.
+   */
+  const vacationTerminee =
+    mission?.status === 'in_progress' &&
+    (affectations ?? []).some((affectation) => Boolean(affectation.check_out_time));
+
+  const cloturer = async () => {
+    if (!mission) return;
+    setErreurCloture(null);
+    try {
+      await terminer.mutateAsync(mission.id);
+    } catch (e) {
+      setErreurCloture(
+        messageErreur(e, 'clôturer', 'Impossible de clôturer la mission.'),
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -146,6 +180,39 @@ export default function SuiviMission() {
           </Card>
         ) : null}
 
+        {vacationTerminee ? (
+          <Card style={styles.carteCloture}>
+            <Typography variant="h3">La mission est-elle terminée ?</Typography>
+            <Typography
+              variant="caption"
+              color={COLORS.textSecondary}
+              style={styles.texte}
+            >
+              Votre prestataire a pointé son départ. Confirmez que la prestation
+              est terminée pour clore la mission. C’est vous seul qui pouvez le
+              décider.
+            </Typography>
+            <Button
+              title="Confirmer la fin de la mission"
+              icon="check-decagram"
+              onPress={() => void cloturer()}
+              disabled={terminer.isPending}
+            />
+          </Card>
+        ) : null}
+
+        {erreurCloture ? (
+          <Card style={styles.carteErreur}>
+            <Typography
+              variant="caption"
+              color={COLORS.textSecondary}
+              style={styles.texte}
+            >
+              {erreurCloture}
+            </Typography>
+          </Card>
+        ) : null}
+
         {affectations?.map((affectation) => {
           const prestataireId =
             affectation.agent_id ?? affectation.company_id ?? '';
@@ -157,6 +224,9 @@ export default function SuiviMission() {
               createdAt={affectation.created_at}
               prestataireId={prestataireId}
               prestataire={prestataireId ? index[prestataireId] : undefined}
+              checkInTime={affectation.check_in_time}
+              checkOutTime={affectation.check_out_time}
+              rapport={affectation.report}
             />
           );
         })}
@@ -208,6 +278,20 @@ const styles = StyleSheet.create({
   },
   sousTitreListe: {
     marginBottom: SPACING.md,
+  },
+  carteCloture: {
+    padding: SPACING.lg,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  carteErreur: {
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.error,
   },
   texte: {
     lineHeight: 20,

@@ -390,6 +390,37 @@ export const providersService = {
   },
 
   /**
+   * Passer le prestataire en disponible ou en indisponible.
+   *
+   * ⚠️ NE PAS AJOUTER `.select()` — même précaution que `createMission`.
+   *
+   * PRÉCISION HONNÈTE : cette précaution n'est PAS prouvée nécessaire ici.
+   * `updateAgentProfile` conserve son `.select()` et fonctionne depuis le
+   * 2026-09-27 : l'agent lit sa PROPRE fiche, que la politique lui ouvre
+   * explicitement, donc la relecture aboutit. C'est un contre-exemple utile —
+   * le motif de P1 n'est pas universel, il dépend de ce que la politique
+   * autorise au relecteur.
+   *
+   * On retire quand même le `.select()` : rien n'a besoin de la ligne rendue,
+   * et cela supprime une classe entière d'échecs possibles. Le coût est nul.
+   *
+   * `is_available` EST ACCORDÉ EN ÉCRITURE par le `grant update` de `00300` —
+   * contrairement à ce que la recherche pouvait laisser croire, où il n'était
+   * que lu. C'est le contrôle 24 qui le vérifie.
+   */
+  async setDisponibilite(
+    agentProfileId: string,
+    isAvailable: boolean,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('agent_profiles')
+      .update({ is_available: isAvailable })
+      .eq('id', agentProfileId);
+
+    if (error) throw error;
+  },
+
+  /**
    * Fiche agent du compte connecté, ou `null` s'il n'en a pas encore.
    *
    * `maybeSingle()` et non `single()` : l'absence est un état NORMAL — le plus
