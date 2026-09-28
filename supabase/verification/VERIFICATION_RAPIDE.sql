@@ -376,12 +376,28 @@ with checks(controle, valeur, statut) as (
   -- trigger sans la suppression du DEFAULT laisserait les deux mecanismes
   -- cohabiter, et 01600 echouerait sur ce point precis.
   union all
-  -- Les guillemets doubles ci-dessous sont VOLONTAIRES : ces deux libelles
-  -- contiennent une apostrophe, donc ils ne peuvent pas etre ecrits avec les
-  -- simples du reste du fichier. Un libelle casse fait echouer tout le script,
-  -- et l'affichage s'arrete sur la ligne 18, en laissant 1 a 17 sans statut.
+  -- Les GUILLEMETS SIMPLES ci-dessous sont NON NEGOCIABLES, comme partout dans
+  -- ce fichier.
   --
-  select "18. missions.client_id : trigger actif, DEFAULT absent",
+  -- Le 2026-09-27, ces deux libelles ont ete ecrits entre guillemets DOUBLES,
+  -- pour « echapper » une apostrophe qui n'existait pas dans le texte. Le script
+  -- n'a donc plus jamais demarre, et l'echec etait total :
+  --
+  --     ERROR: 42703: column "18. missions.client_id : ..." does not exist
+  --
+  -- En SQL, `"..."` designe un IDENTIFIANT — une colonne — et NON une chaine.
+  -- Un libelle ecrit ainsi est recherche dans une table qui n'existe pas ici.
+  --
+  -- L'echec porte sur la LIGNE, donc sur TOUTE la requete : les controles 1 a
+  -- 17 ne s'affichent meme pas. C'est la 5e fois qu'un controle defaillant
+  -- produit un « tout va bien » trompeur en amont — le defaut inverse de ceux
+  -- deja corriges, et tout aussi grave : ici, le controle ne ment pas, il ne
+  -- repond pas du tout.
+  --
+  -- REGLE : un libelle se met entre guillemets SIMPLES. S'il contient une
+  -- apostrophe, on la double — 'missions.client_id : d''agent' — et surtout on
+  -- ne change pas de delencheur pour une raison imaginée.
+  select '18. missions.client_id : trigger actif, DEFAULT absent',
          (select case
                   when exists (select 1 from pg_trigger t
                                 where t.tgrelid = 'public.missions'::regclass
@@ -426,7 +442,7 @@ with checks(controle, valeur, statut) as (
   -- alors que l'appelant n'a pas reellement le droit de la choisir. Une fonction
   -- ordinaire ne fonctionnerait pas ici.
   union all
-  select "19. missions.client_id : valeur imposee (droit + trigger)",
+  select '19. missions.client_id : valeur imposee (droit + trigger)',
          (select case
                   when exists (select 1 from information_schema.column_privileges
                                 where table_schema = 'public'
@@ -465,6 +481,154 @@ with checks(controle, valeur, statut) as (
                              and p.proname = 'force_mission_client_id'
                              and p.prosecdef)
            then 'OK' else 'ALERTE' end
+  -- 20. Droits d'ecriture de l'affectation : les 4 colonnes annoncees, RIEN
+  --     D'AUTRE.
+  --
+  --     LE CONTROLE 12 NE SUFFIT PAS. Il mesure la POLITIQUE. Il ne mesure pas
+  --     le DROIT — qui est une autre couche, et qui tombea elle aussi lors du
+  --     `DROP TABLE ... CASCADE` de 000001_reset_all.sql.
+  --
+  --     C'est le meme piege que le `grant select` manquant sur agent_profiles :
+  --     la politique est en place, la requete echoue quand meme, et aucun
+  --     controle ne regardait le droit. Le parcours d'affectation reposait donc
+  --     sur une garantie que rien ne verifiait.
+  --
+  --     On mesure les DEUX moities, et dans les deux sens :
+  --       - les 4 colonnes accordees (mission_id, agent_id, company_id,
+  --         proposed_rate) doivent etre presentes ;
+  --       - `status`, `report` et les horodatages de pointage doivent en etre
+  --         ABSENTS. C'est ce qui empeche un client de s'ecrire `accepted`, ou
+  --         de se declarer pointe, sans passer par les fonctions de transition.
+  union all
+  select '20. Droits insert affectations (4 colonnes, status exclu)',
+         (select count(*)::text from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'mission_assignments'
+             and grantee = 'authenticated' and privilege_type = 'INSERT'),
+         case when (select count(*) from information_schema.column_privileges
+           where table_schema = 'public' and table_name = 'mission_assignments'
+             and grantee = 'authenticated' and privilege_type = 'INSERT') >= 4
+           and not exists (select 1 from information_schema.column_privileges
+             where table_schema = 'public' and table_name = 'mission_assignments'
+               and grantee = 'authenticated' and privilege_type = 'INSERT'
+               and column_name in ('id', 'status', 'report',
+                                   'check_in_time', 'check_out_time'))
+           then 'OK' else 'ALERTE' end
+
+  -- 21. Visibilite des prestataires par un client — 01900 et 02000.
+  --
+  --     Ces deux migrations ont corrige le 4eme defaut du projet : la recherche
+  --     d'un client ne renvoyait rien, parce que la politique de lecture de
+  --     `agent_profiles` etait restreinte a l'agent lui-meme et a l'admin. La
+  --     liste etait vide PAR CONSTRUCTION, quel que soit le nombre de fiches.
+  --
+  --     AUCUN CONTROLE NE LES COUVRAIT. Ni `check:supabase`, qui ne teste que
+  --     le role `anon`, ni les 19 controles d'ici. Elles n'etaient garanties par
+  --     rien : une regression les effacerait sans qu'aucun signal ne tire.
+  --
+  --     On mesure les DEUX causes possibles d'un resultat vide, parce qu'elles
+  --     produisent le meme symptome et ne se diagnostiquent pas de la meme facon :
+  --
+  --       1. LA POLITIQUE doit mentionner 'registered' et 'validated'. Sans
+  --          cela, aucun client ne peut lire une fiche.
+  --       2. LA FONCTION `public.liste_agents_publics` doit exister et etre
+  --          `security definer`. PostgREST n'expose QUE le schema `public` :
+  --          si le wrapper disparait, l'appel `/rest/v1/rpc/` renvoie un 404
+  --          SILENCIEUX, et l'ecran affiche encore « aucun prestataire » — meme
+  --          symptome, cause totalement differente.
+  --
+  --     `security definer` est exige parce que la fonction interroge `private`
+  --     et `profiles`, que l'appelant ne peut pas lire.
+  union all
+  select '21. Prestataires lisibles par un client (01900 + 02000)',
+         (select case
+            when exists (select 1 from pg_policy
+                          where polrelid = 'public.agent_profiles'::regclass
+                            and polcmd = 'r'
+                            and pg_get_expr(polqual, polrelid) like '%''registered''%'
+                            and pg_get_expr(polqual, polrelid) like '%''validated''%')
+             and exists (select 1 from pg_proc p
+                          join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public'
+                           and p.proname = 'liste_agents_publics'
+                           and p.prosecdef)
+              then 'politique ouverte + fonction publique presente'
+            else 'POLITIQUE FERMEE ou FONCTION ABSENTE'
+            end),
+         case when exists (select 1 from pg_policy
+                            where polrelid = 'public.agent_profiles'::regclass
+                              and polcmd = 'r'
+                              and pg_get_expr(polqual, polrelid) like '%''registered''%'
+                              and pg_get_expr(polqual, polrelid) like '%''validated''%')
+           and exists (select 1 from pg_proc p
+                        join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public'
+                         and p.proname = 'liste_agents_publics'
+                         and p.prosecdef)
+           then 'OK' else 'ALERTE' end
+
+  -- 22. Les SOCIÉTÉS sont lisibles par un client — 2026-09-28.
+  --
+  --     LE CONTRÔLE 21 NE VOIT QUE LES AGENTS, ET C'EST LE TROU QU'IL NE
+  --     VOYAIT PAS.
+  --
+  --     La politique de lecture de `company_profiles` restreignait l'accès à la
+  --     société elle-même et à l'administrateur. La recherche interroge pourtant
+  --     cette table : elle renvoyait donc **zéro société**, sans erreur et sans
+  --     journal. Le test du 2026-09-27 a trouvé un agent, et l'absence de
+  --     sociétés n'a pas été remarkée.
+  --
+  --     C'est le défaut corrigé par `01900` pour `agent_profiles`, jamais repris
+  --     pour `company_profiles` — et le contrôle 21, écrit le même jour, n'a
+  --     regardé que la table que `01900` venait de corriger.
+  --
+  --     On exige les MÊMES deux statuts que pour les agents : `registered` et
+  --     `validated`. `rejected` et `suspended` doivent rester invisibles, sinon
+  --     la validation par un administrateur n'aurait aucun effet.
+  --
+  --     ET ON EXIGE QUE `FORCE` SOIT TOUJOURS ACTIF SUR LES DEUX TABLES.
+  --     Les fonctions de l'annuaire sont en `SECURITY DEFINER` : sans `force`,
+  --     le propriétaire n'est soumis à aucune politique et la fonction
+  --     renverrait **toutes** les fiches, y compris rejetées. Aucun autre
+  --     contrôle ne le verrait, et le retrait serait indolore.
+  union all
+  select '22. Societes lisibles + FORCE actif sur les 2 tables',
+         (select case
+            when (select count(*) from pg_class c
+                    join pg_namespace n on n.oid = c.relnamespace
+                   where n.nspname = 'public'
+                     and c.relname in ('agent_profiles', 'company_profiles')
+                     and c.relforcerowsecurity) = 2
+             and exists (select 1 from pg_policy
+                          where polrelid = 'public.company_profiles'::regclass
+                            and polcmd = 'r'
+                            and pg_get_expr(polqual, polrelid) like '%''registered''%'
+                            and pg_get_expr(polqual, polrelid) like '%''validated''%')
+             and exists (select 1 from pg_proc p
+                          join pg_namespace n on n.oid = p.pronamespace
+                         where n.nspname = 'public'
+                           and p.proname = 'prestataires_par_ids'
+                           and p.prosecdef)
+              then 'politique ouverte, FORCE actif, fonction presente'
+            else 'POLITIQUE FERMEE, FORCE MANQUANT ou FONCTION ABSENTE'
+            end),
+         case when (select count(*) from pg_class c
+                     join pg_namespace n on n.oid = c.relnamespace
+                    where n.nspname = 'public'
+                      and c.relname in ('agent_profiles', 'company_profiles')
+                      and c.relforcerowsecurity) = 2
+           and exists (select 1 from pg_policy
+                        where polrelid = 'public.company_profiles'::regclass
+                          and polcmd = 'r'
+                          and pg_get_expr(polqual, polrelid) like '%''registered''%'
+                          and pg_get_expr(polqual, polrelid) like '%''validated''%')
+           and exists (select 1 from pg_proc p
+                        join pg_namespace n on n.oid = p.pronamespace
+                       where n.nspname = 'public'
+                         and p.proname = 'prestataires_par_ids'
+                         and p.prosecdef)
+           then 'OK' else 'ALERTE' end
+
+
 )
 
 select controle, valeur, statut,
