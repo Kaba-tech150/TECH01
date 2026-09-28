@@ -18,55 +18,39 @@
 >
 > ### Ce qui a changé le 2026-09-28
 >
-> Trois choses, qui viennent toutes de l'exécution et non de la lecture :
+> Session en deux temps. Le matin : remise en route de la vérification. L'après-midi :
+> dix défauts, dont quatre migrations.
 >
-> 1. La base distante a été mesurée : **22 contrôles sur 22 au vert**.
-> 2. `VERIFICATION_RAPIDE.sql` était **cassé depuis le 27/09 à 23h52** et ne
->    pouvait plus rien vérifier. Corrigé, puis étendu à 21 contrôles.
+> 1. `VERIFICATION_RAPIDE.sql` était **cassé depuis le 27/09 à 23h52** et ne
+>    pouvait plus rien vérifier. Corrigé, puis étendu — d'abord 21, puis **26
+>    contrôles**, tous au vert.
+> 2. **Dix défauts** trouvés et corrigés. Trois vus par le commanditaire à l'écran,
+>    un trouvé par le script de diagnostic **lui-même**.
 > 3. Le plan des 14 étapes a été fourni. Il n'existait nulle part dans le dépôt :
 >    les « étapes 7 à 13 » citées jusqu'ici n'étaient invérifiables par personne.
+>
+> **Aucun des dix défauts n'était détectable par un contrôle d'état.** Ils
+> étaient dans ce que la base **fait**, pas dans ce qu'elle **contient**.
 
 ---
 
 ## État actuel
 
-**Trois parcours métier sont validés à l'écran, pour la première fois depuis le
-début du projet.** Le projet ne compile plus seulement : il fait.
+**Le code des parcours client et agent est complet. Le parcours agent n'a pas
+été ouvert une seule fois.**
 
 | Domaine | État | Preuve |
 |---|---|---|
-| Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 · 91 fichiers `.ts`/`.tsx` |
+| Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 |
 | Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur |
-| Base Supabase | ✅ **Saine** | **[V]** **22 contrôles sur 22 au vert** |
+| Base Supabase | ✅ **Saine** | **[V]** **26 contrôles sur 26 au vert** · `check:supabase` conforme |
 | Sécurité de la base | ✅ Sonde retirée | **[V]** contrôle 17 = `0` |
 | Authentification | ✅ **Validée** | **[V]** `getUser()` serveur, profil et rôles chargés |
-| **Parcours client** | ⚠️ **Partiel** | **[V]** demande et recherche validées · **réservation et suivi absents** |
+| **Parcours client** | ⚠️ **Codé** | **[V]** demande, recherche, publication, réservation, suivi, clôture · **[X] clôture jamais testée |
 | **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création et modification depuis l'écran, valeurs en base |
-| **Parcours agent** | ❌ **1 item sur 6** | **[V]** seul le profil existe |
+| **Parcours agent** | ⚠️ **Codé** | **[X] aucun des 5 écrans ouvert |
 | Espaces société / admin | ❌ **Écrans vides** | **[V]** aucune requête de donnée |
-| Affectation / réservation | ⚠️ **Écriture validée, lecture absente** | **[V]** le client réserve et voit la ligne · **[X] le prestataire ne voit rien** |
-
-
-### Réponse aux trois questions
-
-1. **Où en sommes-nous ?** Socle, architecture et design system terminés. Base
-   conforme et désormais **mesurée**. Étapes 0 à 5 terminées. **Étape 6 aux
-   quatre cinquièmes**, étape 7 à un sixième.
-2. **Qu'est-ce qui fonctionne ?** L'application démarre, s'exporte, navigue,
-   branche l'authentification, **crée une mission, la publie, crée et modifie
-   une fiche agent, retrouve un agent par un client, et réserve ce client sur
-   sa mission**. Le parcours client va jusqu'à l'affectation.
-3. **Quelle est la prochaine étape ?** **L'acceptation côté agent.** Le client
-   réserve, mais le prestataire ne peut ni voir sa demande, ni y répondre :
-   l'affectation restera `pending` indéfiniment.
-
-### Réserve générale
-
-**[V]** Aucun test automatisé n'existe. Les seules validations sont `typecheck`,
-`lint`, `npx eslint .`, un export web et des tests manuels. **Rien n'a été
-vérifié sur un appareil mobile.** L'absence de test automatisé a laissé passer
-**cinq défauts** qu'aucun contrôle existant ne pouvait voir (voir « Problèmes
-rencontrés »).
+| **Étape 12 — qualité** | ⚠️ **amorcée** | **[V]** `test:parcours` écrit · **[X] jamais exécuté |
 
 ---
 
@@ -302,8 +286,8 @@ racine, qui divergent.
 
 ### Migrations
 
-**[V]** 19 fichiers : `000001_reset_all.sql` (destructif) et 18 migrations datées
-`20260925000100` à `20260926002000`.
+**[V]** 23 fichiers : `000001_reset_all.sql` (destructif) et 22 migrations datées
+`20260925000100` à `20260928002400`.
 
 | Migration | Objet |
 |---|---|
@@ -325,6 +309,10 @@ racine, qui divergent.
 | `01800` | restauration des droits sur les fiches prestataires |
 | `01900` | agents visibles par les clients |
 | `02000` | annuaire des prestataires, `liste_agents_publics` |
+| `02100` | sociétés visibles par les clients, `prestataires_par_ids` |
+| `02200` | **matrice réparée** : `accepted` avait aucune sortie · `pointer_arrivee`, `pointer_depart` |
+| `02300` | pointages **redeclares `volatile`** — voir défaut 8 |
+| `02400` | `cloturer_mission` : mission **et** affectations, en une opération |
 
 > **[X] Numérotation trouée : `00800` et `01700` n'existent pas.** Sans
 > conséquence connue, mais à confirmer — migration supprimée ou jamais écrite ?
@@ -351,17 +339,25 @@ racine, qui divergent.
 
 | Fichier | Rôle |
 |---|---|
-| `VERIFICATION_RAPIDE.sql` | **21 contrôles**, un seul `SELECT`, un seul verdict |
+| `VERIFICATION_RAPIDE.sql` | **26 contrôles**, un seul `SELECT`, un seul verdict |
 | `VERIFICATION_POST_MIGRATION.sql` | 19 contrôles détaillés, un par un |
-| `LISTE_POLITIQUES.sql`, `DIAGNOSTIC_ETAT.sql`, `ETAT_DROITS_AGENT.sql` | diagnostics |
-| `MIGRATIONS_EN_ATTENTE.md`, `GUIDE_APPLICATION_MIGRATIONS.md`, `RECONSTRUCTION_BASE.md` | ⚠️ guides, **deux périmés** |
+| `LISTE_POLITIQUES.sql`, `DIAGNOSTIC_ETAT.sql`, `ETAT_DROILS_AGENT.sql` | diagnostics |
+| `MIGRATIONS_EN_ATTENTE.md` → *ÉTAT DE LA BASE* | ✅ **à jour** — 26/26, aucune migration en attente |
+| `GUIDE_APPLICATION_MIGRATIONS.md`, `RECONSTRUCTION_BASE.md` | ⛔ **périmés**, bandeau d'avertissement en tête |
 
-> ⚠️ **`MIGRATIONS_EN_ATTENTE.md` est périmé et dangereux** : il prescrit
-> d'appliquer `01200`, qui est **déjà appliquée**. À remplacer.
+> ⚠️ **`MIGRATIONS_EN_ATTENTE.md` prescrivait d'appliquer `01200`, déjà
+> appliquée.** Le 2026-09-28 il a été réécrit : il annonçait un défaut qui
+> n'existait plus, et ignorait les quatre migrations du jour. **Vérifié le
+> 2026-09-28.**
+>
+> Un document périmé qui renvoie à un document périmé est un piège à deux
+> étages. Les deux fichiers portaient un bandeau « ⛔ PÉRIMÉ » correct — mais
+> tous deux renvoyaient vers celui-ci **en le croyant à jour**. C'est lui qui
+> mentait. La chaîne entière devait être revue, pas seulement la feuille.
 
 ### Machines à états
 
-**[V]** 8 RPC `SECURITY DEFINER`, accordées à `authenticated` et révoquées pour
+**[V]** 11 RPC `SECURITY DEFINER`, accordées à `authenticated` et révoquées pour
 `anon`. Le client n'écrit **jamais** un statut.
 
 **Mission** — `draft`, `published`, `accepted`, `in_progress`, `completed`,
@@ -387,7 +383,19 @@ racine, qui divergent.
 |---|---|
 | accepter | `accept_assignment` |
 | refuser | `reject_assignment` |
-| terminer | `complete_assignment` |
+| terminer | `complete_assignment` — **jamais appelée** |
+| **pointer l'arrivée** | `pointer_arrivee` — fait aussi passer la mission `in_progress` |
+| **pointer le départ** | `pointer_depart` — emporte le rapport, **ne clôture rien** |
+
+> `complete_assignment` exige l'**agent affecté** comme acteur, donc le client ne
+> peut pas l'appeler. C'est pourquoi `cloturer_mission` fait le travail des deux
+> côtés, et pourquoi l'affectation ne peut plus rester `accepted` après la
+> clôture de la mission.
+>
+> `pointer_depart` ne clôture pas la mission : c'est une **décision métier**.
+> L'agent termine SA vacation, le client — seul juge de ce qui a été fait —
+> confirme. Un agent qui pourrait clore pourrait le faire avant l'heure, et le
+> temps facturé s'arrêterait.
 
 **Prestataire** — **[D]** sept valeurs, dont `registered` et `validated`
 confirmées par la politique de `01900`. Le plan enchaîne inscription → documents

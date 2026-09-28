@@ -26,7 +26,11 @@ interface CartePrestataireProps {
  * Elle ne l'était pas, et le motif était raisonnable : on ne construit pas le
  * bouton qui déclenche une écriture avant d'avoir prouvé que l'écriture
  * fonctionne. Elle fonctionne maintenant sur un parcours — mission créée et
- * fiche agent enregistrées depuis l'écran, 21 contrôles de la base au vert.
+ * fiche agent enregistrées depuis l'écran, contrôles de la base au vert.
+ *
+ * Le nombre de contrôles n'est pas écrit ici à dessein : il change à chaque
+ * contrôle ajouté, et un commentaire qui annonce un nombre finit forcément par
+ * annoncer un nombre faux. La source de vérité est `RAPPORT_PROJET.md`.
  *
  * Le principe de prudence était justifié à sa date. Le conserver aurait fait de
  * ce fichier un mensonge, ce qui est plus grave que de le corriger.
