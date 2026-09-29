@@ -42,15 +42,196 @@
 | Domaine | État | Preuve |
 |---|---|---|
 | Socle technique | ✅ Opérationnel | **[V]** `tsc --noEmit` vide · `npx eslint .` exit 0 |
-| Design system | ✅ Opérationnel | **[V]** tokens centralisés, 6 primitives, aucune couleur en dur |
+| **Design system** | ⚠️ **Socle refait, 2 écrans sur 11** | **[V]** identité « SecuGuard Enterprise » appliquée aux tokens, aux 6 primitives, à l'en-tête et à la navigation · **[V]** accueil agent et exécution de mission reconstruits · **[X]** aucun des deux revu à l'écran |
 | Base Supabase | ✅ **Saine** | **[V]** **26 contrôles sur 26 au vert** · `check:supabase` conforme |
 | Sécurité de la base | ✅ Sonde retirée | **[V]** contrôle 17 = `0` |
 | Authentification | ✅ **Validée** | **[V]** `getUser()` serveur, profil et rôles chargés |
 | **Parcours client** | ⚠️ **Codé** | **[V]** demande, recherche, publication, réservation, suivi, clôture · **[X] clôture jamais testée |
 | **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création et modification depuis l'écran, valeurs en base |
-| **Parcours agent** | ⚠️ **Codé** | **[X] aucun des 5 écrans ouvert |
+| **Parcours agent** | ⚠️ **Codé** | **[V]** exécution de mission écrite et routée · **[X] aucun écran ouvert à ce jour |
 | Espaces société / admin | ❌ **Écrans vides** | **[V]** aucune requête de donnée |
-| **Étape 12 — qualité** | ⚠️ **amorcée** | **[V]** `test:parcours` écrit · **[X] jamais exécuté |
+| **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet (3 valeurs sur 4 vides, constaté le 2026-09-29) · **[X]** jamais exécuté |
+
+---
+
+## Identité visuelle — « SecuGuard Enterprise » (2026-09-29)
+
+Le design livré dans `design/` remplace l'identité précédente. **Lot 1
+terminé : le socle est refait, les 11 écrans maquettés ne le sont pas encore.**
+
+### Combien d'écrans, en fait **[V]**
+
+Compté sur le code, pas estimé.
+
+| | Nombre | Détail |
+|---|---|---|
+| **Écrans réels** | **27** | fichiers de route dans `src/app`, hors `_layout` et `+not-found` |
+| **Maquettes d'écrans** | **11** | 10 dans `stitch/` + `paramettre` à la racine |
+| **Routes couvertes par une maquette** | **7** | voir tableau ci-dessous |
+| **Routes sans maquette** | **19** | différées |
+| **Maquettes sans route** | **2** | 2FA et évaluation, à créer en visuel pur |
+| **Écrans reconstruits** | **2** | accueil agent, exécution de mission · 9 restent |
+
+| Maquette | Route réelle | Lot |
+|---|---|---|
+| `splash_screen` | *aucune* — `app.json` + `StartupGate` | 2A |
+| `bienvenue_onboarding` | `(startup)/onboarding` | 2A |
+| `onboarding_pr_sentation` | `(startup)/onboarding` — même route, 2e et 3e slides | 2A |
+| `authentification_2fa` | *aucune* — **à créer** | 3 |
+| `connexion` | `(auth)/sign-in` | 2B |
+| `cr_ation_de_compte` | `(auth)/sign-up` | 2B |
+| `r_server_et_payer` | `(client)/mission/new` | 2C |
+| `ex_cution_mission_agent` | `(agent)/mission/[id]` | **2C — reconstruit** |
+| `revenus_historique_agent` | `(agent)/index` | 2C |
+| `valuer_le_service` | *aucune* — **à créer** | 3 |
+| `paramettre` | `(client)/profile` | 2D |
+
+**Trois pièges dans ce décompte**, qui expliquent les « 10 » antérieurs :
+
+1. `stitch/secuguard_authentification_2fa/` **n'existait pas** comme HTML
+   racine : à la racine il n'y a que `authentification_2fa.png`, **sans HTML**.
+   Le PNG seul a fait perdre une maquette à chaque inventaire précédent.
+2. `stitch/secuguard_enterprise/` **ne contient qu'un `DESIGN.md`** — ni HTML ni
+   PNG. Ce n'est pas un écran, c'est la documentation du design system. En le
+   comptant, `stitch` annonçait 11 dossiers pour 10 écrans : c'est de là que
+   venait le compte « 10 », et il était juste **par accident**.
+3. `design/code.html` est la **galerie de composants** de Stitch, pas un écran.
+
+`paramettre` n'existe que à la racine, pas dans `stitch`. Enfin,
+`(client)/index` a été restylé au lot 1 **sans avoir de maquette** : c'est de
+la mise en conformité au socle, pas une reconstruction.
+
+### Règle de lecture du design
+
+`design/DESIGN.md` se contredit sur deux points : son bloc YAML déclare
+`primary: #000000`, le texte juste en dessous annonce « Primary #0F172A »,
+et ni l'un ni l'autre n'apparaît dans les rendus. **Quand `DESIGN.md` et les
+maquettes divergent, la maquette l'emporte** : le PNG et le HTML sont
+cohérents entre eux, le texte ne l'est pas.
+
+### Ce qui est vérifié **[V]**
+
+Relevé sur le `tailwind.config` embarqué dans chaque maquette, puis posé dans
+`src/constants/index.ts`.
+
+| Token | Identité précédente | Identité « SecuGuard » |
+|---|---|---|
+| `background` | `#FAFAFF` | **`#FCF8FA`** |
+| `surfaceContainerHigh` | `#E3E7FF` | **`#EAE7E9`** |
+| `primary` (actions) | `#00677F` teal | **`#000000`** noir |
+| `primaryContainer` (navy) | `#022E43` | **`#131B2E`** |
+| `accent` | `#F79009` | **`#F59E0B`** |
+| `accentSurface` | *inexistant* | **`#FCDEB5`** |
+| `text` | `#101828` | **`#1B1B1D`** |
+| `textSecondary` | `#475467` | **`#45464D`** |
+| `border` | `#E4E7EC` | **`#C6C6CD`** |
+| `error` | `#C62828` | **`#BA1A1A`** |
+| `success` | `#027A48` | **`#1F6F45`** |
+| `BORDER_RADIUS.lg` | 16 | **12** |
+| Titres | Plus Jakarta Sans | **Hanken Grotesk 600/700** |
+| Texte courant | Manrope | **Plus Jakarta Sans 400/500** |
+
+**La paire de polices est inversée.** Hanken Grotesk porte désormais tout ce
+qui est titre, libellé ou bouton ; Plus Jakarta Sans le texte courant. Manrope
+a été désinstallé.
+
+**Sur le splash, j'ai retiré l'image.** `expo-splash-screen` configurait un
+`image` de 76 px sur fond `#208AEF`. Le fond est passé au navy `#131B2E` et le
+logo a été retiré : l'application affiche désormais un aplat navy nu. Le logo
+de la maquette reste **à produire** — `assets/images/splash-icon.png` est
+désormais inutilisé, et l'absence d'image n'est pas un choix esthétique
+défendable, c'est un manque.
+
+### Le point qui n'est pas une question de goût
+
+**La couleur de marque est passée du teal `#00677F` au noir `#000000`.** Dans
+la maquette, les boutons d'action sont noirs et le teal n'apparaît nulle part.
+Le bleu ne survit que comme teinte de fond froide (`primaryLight` `#DAE2FD`,
+`secondaryContainer` `#D5E3FD`). Conséquence : l'onglet inactif est redevenu
+gris, et non plus « bleu atténué ». C'est une régression visuelle **voulue**,
+pas un oubli.
+
+### Deux points vérifiés **[V]**
+
+**Le manifeste PWA gardait l'ancienne identité — défaut trouvé en construisant.**
+
+`npx expo export` avait réussi du premier coup, `tsc` et `eslint` étaient
+verts, et le bundle contenait malgré tout :
+
+```
+"name":"secu", "shortName":"secu", "backgroundColor":"#208AEF"
+```
+
+L'`app.json` ne déclarait **aucun** `expo.web.name`, `shortName`,
+`backgroundColor` ni `themeColor` : le manifeste héritait de valeurs
+précédentes. Le nom affiché dans l'onglet du navigateur, le nom de
+l'application installée et la couleur de fond du splash navigateur étaient
+restés ceux de « secu ». Corrigé dans `app.json`, puis vérifié dans le bundle
+reconstruit : `#208AEF` est passé de 1 occurrence à **0**.
+
+**Un cache Metro resservait la configuration périmée.** Après la correction,
+l'export produisait *encore* l'ancien `app.json` — fichier au hash identique
+à l'export précédent, malgré la suppression de `dist-web/` et de `.expo/`.
+`npx expo config --clear` **n'existe pas** en Expo 57 (option refusée par
+`node`). La purge se fait avec `npx expo export --clear`, qui vide le cache
+Metro. **Un vert sur `typecheck` + `eslint` n'aurait jamais vu ce défaut.**
+
+**Le `scheme` ne casse rien.** Recherche récursive dans `src/` : aucun
+`signInWithOAuth`, `signInWithOtp`, `getOAuthSignInUrl`, `redirectTo` ni
+`Linking.openURL`. L'application n'a aucune redirection OAuth, il n'y avait
+donc rien à mettre en cohérence avec `secuguard://`. **Si Google ou Apple est
+ajouté un jour**, c'est à ce moment-là qu'il faudra inscrire `secuguard://`
+dans les Redirect URLs du tableau de bord Supabase — pas avant.
+
+**Un défaut préexistant, non corrigé.** `_layout.tsx:40` masque le splash dès
+que les polices sont chargées, et `StartupGate.tsx:48` le masque de nouveau
+après la session. Le premier `hideAsync` l'emporte : le splash disparaît
+avant que la session soit connue, alors que le rapport historique annonçait
+l'inverse. **Ce n'est pas une régression de ce lot** — le diff de
+`_layout.tsx` ne touche pas ce `useEffect` — mais c'est un écart entre ce
+qui est écrit et ce qui est fait.
+
+### Les assets étaient ceux du template Expo **[V]**
+
+Aucun `typecheck`, aucun `eslint` et aucun export ne pouvait le voir : ce sont
+des fichiers, et ils n'étaient pas faux, ils étaient **à côté**.
+
+- `icon.png` pesait 799 Ko et représentait l'icône par défaut d'Expo — un « A »
+  bleu — et non SecuGuard. C'est aussi l'image **utilisée dans `AppHeader`**,
+  sur un en-tête clair : l'application affichait un bloc bleu à son sommet.
+- `splash-icon.png` faisait 3317 octets, exactement la taille de
+  `expo-logo.png` : c'était le logo Expo. Le retirer au lot 1 était donc
+  justifié, mais il fallait le remplacer.
+- `react-logo*`, `expo-badge*`, `tutorial-web.png`, `logo-glow.png` et
+  `tabIcons/` (6 fichiers) étaient **orphelins** : zéro référence dans `src/`
+  et dans `app.json`. `tabIcons/` datait du passage à `MaterialCommunityIcons`.
+- `assets/expo.icon/` était un dossier Icon Composer d'Expo, référencé comme
+  icône iOS.
+
+**Le logo est produit**, pas emprunté : bouclier et coche en ambre pâle
+`#FCDEB5` sur navy `#131B2E`, dessinés par `scripts/generer-logo.ps1` à partir
+des mêmes constantes que `src/constants`. Sept fichiers produits, dont
+`secuguard-mark.png` sur fond transparent — c'est celui-là qu'`AppHeader`
+affiche, parce qu'une icône à fond navy sur un en-tête clair donne un bloc
+sombre. Le monochrome est blanc, pour l'icône adaptative Android.
+
+L'en-tête affichait aussi le nom **`Secu`**. Il affiche maintenant `SecuGuard`,
+et `package.json` ne s'appelle plus `secu` non plus. `dist-web/` a été supprimé
+et ajouté au `.gitignore` : il n'y était pas, il aurait été commité.
+
+**Limite à connaître : ni le splash ni l'icône ne sont visibles sous Expo Go.**
+`expo-splash-screen` et les icônes ne s'appliquent qu'à un *development build*
+ou un build de production. Expo Go affiche son propre écran de démarrage. Ce
+qui **est** vérifiable sous Expo Go : palette, polices, composants, navigation.
+
+### Ce qui reste à faire **[X]**
+
+**2 des 11 écrans maquettés sont reconstruits** : l'accueil agent et
+l'exécution d'une mission. Les 9 autres ne le sont pas.
+
+Aucun des deux n'a été revu à l'écran : `typecheck`, `eslint` et
+`expo export` ne disent rien du rendu. C'est la limite que ce projet s'est
+donnée dès le premier défaut.
 
 ---
 
@@ -64,7 +245,7 @@ demande, la recherche, la publication et la réservation.
 | Domaine | Écrit | Vérifié à l'écran |
 |---|---|---|
 | Étape 6 — parcours client | **complet** | jusqu'à la réservation seulement |
-| Étape 7 — parcours agent | **complet** | **[X] aucun des 5 écrans ouvert** |
+| Étape 7 — parcours agent | **complet** | **[X] aucun écran ouvert à ce jour |
 
 **C'est le seul obstacle qui reste**, et il n'est pas dans le code.
 
@@ -103,7 +284,7 @@ Trois ont été vus **par le commanditaire**, pas par un contrôle : la mission
 | 6 bis — Fiche agent | ✅ | **[V]** création **et** modification, valeurs en base |
 | 6 ter — Recherche | ✅ | **[V]** agent retrouvé par un compte client |
 | 7 — Parcours agent | ⚠️ **codé** | **[X] aucun écran ouvert |
-| 12 — Qualité | ⚠️ **amorcée** | **[V]** `test:parcours` écrit · **[X] jamais exécuté |
+| 12 — Qualité | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet · **[X]** jamais exécuté |
 
 > Les étapes 6 et 7 sont marquées « codé », pas « terminée ». **Du code non
 > exécuté n'est pas une fonctionnalité**, et l'étape 6 l'a déjà démontré : elle
@@ -116,6 +297,27 @@ Trois ont été vus **par le commanditaire**, pas par un contrôle : la mission
 ### Lancer `test:parcours`, puis ouvrir les écrans de l'étape 7
 
 **C'est la seule chose qui bloque.** Tout le reste est écrit.
+
+**État constaté le 2026-09-29 [V]** — `.env.test` existe, est ignoré par git
+(`.gitignore:36`), mais n'est pas renseigné :
+
+| Clé | État |
+|---|---|
+| `TEST_CLIENT_EMAIL` | vide |
+| `TEST_CLIENT_PASSWORD` | vide |
+| `TEST_AGENT_EMAIL` | renseignée |
+| `TEST_AGENT_PASSWORD` | vide |
+
+Le test n'a **pas** été lancé : un mot de passe ne se devine pas, et aucun
+n'a été inventé. Le script s'arrête sur `CONFIGURATION INCOMPLETE` avant sa
+première étape **[D]** — cette sortie n'a pas été observée, la commande n'ayant
+pas été exécutée.
+
+**À faire par le commanditaire :** renseigner les trois valeurs vides, avec deux
+comptes **distincts** et **jetables**. Le test crée une mission par exécution et la
+clôture ; une mission close ne se rouvre pas, et aucune politique de
+suppression côté client n'existe. Le compte agent doit avoir une fiche
+`agent_profiles` complète, sinon le test s'arrête à l'étape 0.
 
 **1. Le test automatique** — 3 valeurs à renseigner dans `.env.test`, puis :
 
@@ -130,6 +332,23 @@ jamais été essayées**.
 
 **2. Les écrans de l'étape 7** — le test joue la base, pas React Native.
 Le parcours agent reste non vérifié même si le test est vert.
+
+**Ce que `test:parcours` ne couvre pas [V, par lecture du script] :**
+l'écriture directe sur `report` (`enregistrerRapport`) avant le départ. Le script
+ne fait passer le rapport que par `pointer_depart`. Le droit est mesuré par le
+contrôle 23 (état des `grant`), mais **l'écriture elle-même n'a jamais été
+exécutée**. Elle demande un test à part ou l'ouverture de l'écran.
+
+**Ce qu'il faut ouvrir, dans cet ordre, avec une session agent réelle :**
+
+1. `(agent)/missions` — la liste, et `accept_assignment` / `reject_assignment`,
+   **jamais exécutées** ;
+2. `(agent)/mission/[id]` — l'écran d'exécution, **atteignable mais jamais
+   rendu** : chrono, consignes, rapport, pointage d'arrivée puis de départ ;
+3. `(agent)/index` — l'accueil reconstruit, dans ses trois états.
+
+Le premier écran à ouvrir est le second : c'est là que se trouvent les quatre
+fonctions de transition que personne n'a jamais vues répondre.
 
 **3. Ensuite seulement**, les décisions métier : missions publiées côté agent,
 modèle fermé ou appel d'offres, annuaire réciproque, visibilité de l'adresse.
@@ -505,24 +724,186 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 
 ### Écrans vides — aucune fonctionnalité **[V]**
 
-**10 gestionnaires `onPress={() => {}}` sur 7 écrans**, et **3 écrans
-« Bientôt disponible »** :
+**6 gestionnaires `onPress={() => {}}` restants, et 2 écrans « Bientôt
+disponible ».**
+
+*Décompte refait le 2026-09-29 par recherche sur l'ensemble du dépôt. Le
+tableau précédent annonçait 10 gestionnaires et 3 écrans « Bientôt
+disponible » : il était périmé, et les trois écrans agent qu'il citait
+(`index`, `missions`, `availability`) sont en réalité implémentés et
+interrogent la base.*
 
 | Écran | Constat |
 |---|---|
-| `(agent)/index.tsx` | 2 boutons vides |
-| `(agent)/missions.tsx` | 1 bouton vide |
-| `(agent)/availability.tsx` | 1 bouton vide + « Bientôt disponible » |
 | `(company)/index.tsx` | 2 boutons vides |
 | `(company)/missions.tsx` | 1 bouton vide |
 | `(company)/team.tsx` | 1 bouton vide |
 | `(admin)/index.tsx` | 2 boutons vides |
 | `(admin)/users.tsx` | « Bientôt disponible » |
 | `(admin)/missions.tsx` | « Bientôt disponible » |
-| 3 × `profile.tsx` (client, company, admin) | statiques |
+| 2 × `profile.tsx` (company, admin) | statiques |
 
-> **Aucune requête de données** dans les espaces agent, société et
-> administrateur, à l'exception de la fiche agent.
+> **Aucune requête de données** dans les espaces société et administrateur.
+> L'espace agent est le seul à être entièrement relié.
+
+### Accueil agent reconstruit — 2026-09-29
+
+`src/app/(agent)/index.tsx` a été reconstruit depuis
+`design/secuguard_accueil_agent_ind_pendant.html`. Il ne contient plus aucun
+gestionnaire vide.
+
+**Vérifié `[V]` :**
+
+| Point | Preuve |
+|---|---|
+| Le fichier compile | `npx tsc --noEmit` vide |
+| Le code est conforme aux règles | `npx eslint .` vide, dépôt entier |
+| Le schéma est intact | `check:supabase` : `RESULTAT : conforme` |
+| Aucune donnée en dur | tous les compteurs viennent d'une lecture |
+
+**Écrans alimentés par la base :**
+
+| Bloc | Source |
+|---|---|
+| Identité, zone, agrément | `profiles`, `agent_profiles.zone`, `certification_number` |
+| Demandes, terminées, reçues | `mission_assignations` filtrées par statut |
+| Vacation en cours | `accepted` **avec** `check_in_time` et **sans** `check_out_time` |
+| Solde et séquestre | `wallets.balance`, `wallets.blocked_balance` |
+| Tarif horaire | `agent_profiles.hourly_rate`, masqué s'il est nul |
+| Bascule de disponibilité | mutation `useChangerDisponibilite` |
+
+**Écarts assumés avec la maquette `[V]` :**
+
+La maquette est un poste de supervision ; l'application est une place de
+marché. Les blocs suivants ont été **retirés plutôt que simulés**, parce que le
+modèle ne contient aucune donnée capable de les remplir :
+
+- « NFC », « Waze », « Astreinte », « 14 PC de sécurité » ;
+- « Cumul net avant prélèvement » et « Taux horaire moy. » — supposeraient une
+  règle de commission, qui relève de l'étape 10 ;
+- le montant « 220 € » des missions en direct, affiché **uniquement** si
+  `proposed_rate` le porte.
+
+`missions.budget` est un budget global saisi par le client, pas un prix ferme :
+l'utiliser comme montant affiché porterait déjà une décision de facturation
+qui n'est pas prise.
+
+**Supposé `[X]`, non vérifié :**
+
+- **Le rendu à l'écran de cet accueil n'a pas été exécuté.** Les vérifications
+  sont statiques. Un écran peut compiler, passer le lint, et planter au premier
+  rendu sur une donnée de forme inattendue.
+- Il faudra une **session agent réelle** pour valider l'affichage des trois
+  états : compte sans fiche, compte avec fiche, compte avec demandes en attente.
+- L'écran **affiche que** `wallets` est en lecture seule. Il n'a aucun moyen de
+  modifier un solde, et le dit à l'écran plutôt que d'exposer un bouton
+  inopérant.
+
+---
+
+### Exécution de mission par l'agent — 2026-09-29
+
+`src/app/(agent)/mission/[id].tsx`, reconstruit depuis
+`design/secuguard_ex_cution_mission_agent.html`. Le fichier était **resté à
+moitié écrit** — il s'arrêtait sur un marqueur `//__SUITE__`, au milieu d'un
+JSX non fermé. `tsc` et `eslint` le signalaient depuis le début de la session ;
+il n'avait jamais été exécuté.
+
+**Vérifié `[V]` :**
+
+| Point | Preuve |
+|---|---|
+| Le fichier compile | `npx tsc --noEmit` vide |
+| Le code est conforme aux règles | `npx eslint .` vide, dépôt entier, **0 avertissement** |
+| La route se construit et se pré-rend | `npx expo export` → `/(agent)/mission/[id] (25KB)` |
+| L'écran est atteignable | bouton « Ouvrir le poste » (accueil), « Ouvrir la mission » (liste) |
+| Ce n'est pas un onglet fantôme | `href: null` déclaré dans `(agent)/_layout.tsx` |
+
+**Ce qui vient de la base :**
+
+| Bloc | Source |
+|---|---|
+| État du poste et chrono | `check_in_time`, `check_out_time` — le chrono est **figé** au départ |
+| **Durée prévue `/ 10h00`** | `end_time - start_time` du client, avec « · dépassée » si l'arrivée est postérieure à la fin |
+| Identité, adresse, créneau | mission imbriquée dans `getAgentMissions()` |
+| Statut de la mission | imbriqué — c'est le seul endroit où l'agent voit que son pointage l'a fait passer `in_progress` |
+| **Journal de vacation** | `created_at`, `check_in_time`, `check_out_time` — les 3 seuls horodatages existants |
+| **Consignes du client** | `description` + `special_requirements`, réunies et remontées, liseré ambre |
+| Rapport | `mission_assignments.report`, en modification pendant la vacation |
+| Zone et tarif | `agent_profiles`, **sans aucun montant calculé** |
+
+**Trois décisions, et leurs raisons :**
+
+1. **Aucune migration n'a été nécessaire.** `description` et
+   `special_requirements` manquaient à la sélection de `getAgentMissions` : ce
+   n'était pas un droit absent. `grant select` sur `missions` est au niveau
+   table, et `private.can_view_mission` ouvre la mission à l'agent affecté dès
+   `pending`. **La RLS filtre des lignes, pas des colonnes.**
+2. **Le rapport peut être enregistré avant le départ.** C'est la seule écriture
+   directe d'un écran dans ce projet, et elle porte sur `report` seul : la
+   colonne est dans le `grant update` de `00300`, la politique « Assigned agents
+   can update mission reports » n'ouvre la ligne qu'à l'agent affecté, et le
+   **contrôle 23** mesure ce droit en excluant explicitement `status`. Sans
+   elle, un rapport écrit à la première heure d'une vacation de dix heures
+   disparaissait au premier verrouillage du téléphone.
+3. **Pas de confirmation avant le départ.** `Alert.alert` n'est pas fiable sous
+   `react-native-web`, et une confirmation qui ne s'affiche pas transforme le
+   bouton en bouton mort. Le libellé dit ce qu'il fait : « Pointer mon départ et
+   envoyer le rapport ».
+
+**Le rendu mobile de la maquette a été confronté à l'écran, bloc par bloc.**
+Sept blocs de `secuguard_ex_cution_mission_agent.html` sur douze n'ont aucune
+source de données — NFC, rondes, PTI, batterie, MCE, caméra, code de portail.
+Ils restent retirés. **Trois blocs réels leur ont été ajoutés :**
+
+| Ajout | Ce qui remplace quoi |
+|---|---|
+| `/ 10h00` dans la pastille du chrono | le « / 10h00 » de la maquette, calculé sur `end_time - start_time` |
+| **Journal de vacation** | le « Journal d'Événements (MCE) », réduit aux 3 horodatages qui existent |
+| **Consignes du client** | les cartes « Description » et « Consignes du site », réunies et remontées |
+
+**Le retard est annoncé par le texte ET par la couleur**, jamais par la couleur
+seule : « · dépassée » en ambre pâle, lisible sur le navy et par un lecteur
+d'écran. Un signal inaccessible est un signal absent.
+
+**`updated_at` n'est pas utilisé dans le journal**, volontairement : il bouge à
+chaque écriture, y compris à chaque pointage, et un journal bâti dessus
+mentirait sur l'heure de ses propres lignes.
+
+**L'écart avec la maquette est écrit à l'écran**, sous le journal comme sous les
+consignes : « le modèle ne conserve aucun événement horodaté », « le modèle ne
+leur réserve aucune colonne ». Un bloc manquant sans explication se lit comme un
+bug ; avec elle, il se lit comme une limite.
+
+**Refusé, et dit ici pour que ce soit tranché :** `expo-battery` pour le
+« 94 % », et une table `mission_events` pour un vrai journal horodaté. Le
+premier rendrait « inconnue » sur le web — donc la preuve n'existerait que sur
+mobile. Le second est un choix de modèle, pas un écran, et il appartient à
+l'étape 11.
+
+**Un défaut corrigé au passage `[V]` :** le brouillon du rapport était réinitialisé
+par un `useEffect` dépendant de `report`. Chaque invalidation du cache effaçait
+donc la saisie en cours. La réinitialisation ne porte plus que sur un
+**changement d'affectation**, et se fait pendant le rendu.
+
+**Retiré de la maquette, faute de source `[V]` :** « Matricule AG-7842 » (aucune
+colonne), « Batterie GPS 94 % » (`expo-battery` absent), « Dispositif PTI
+ARMÉ », « Scan NFC Validé » (`expo-nfc` absent), les rondes et leurs points de
+passage (aucune table), le « Journal d'Événements (MCE) » horodaté (aucun
+historique), l'aperçu caméra (`expo-camera` absent), le code de portail et le
+téléphone du responsable (aucune colonne), et la partie SOS, à la demande du
+commanditaire. **Aucun n'est simulé.**
+
+**Supposé `[X]`, non vérifié :**
+
+- **Aucun rendu à l'écran.** `tsc`, `eslint` et `expo export` sont des preuves
+  de construction, pas de fonctionnement. Un `getAgentMissions()` jamais
+  exécuté peut renvoyer une forme inattendue.
+- `pointer_arrivee`, `pointer_depart`, `accept_assignment` et
+  `reject_assignment` **restent non exécutés**. L'écran ne fait qu'ajouter des
+  boutons à des fonctions dont le comportement n'a jamais été observé.
+- **La nouvelle écriture sur `report` n'a pas été exécutée non plus.** Le
+  contrôle 23 mesure le droit, jamais l'écriture.
 
 ---
 
@@ -533,6 +914,9 @@ compilation. C'est une garantie réelle contre les fautes de frappe dans les
 - **[X]** **Jamais exécuté** — il exige deux couples email / mot de passe, dans
   un `.env.test` ignoré par git. C'est le premier test automatique du projet,
   et son premier résultat est encore inconnu
+- **[V]** Bloqué le 2026-09-29 : dans `.env.test`, seul `TEST_AGENT_EMAIL` est
+  renseigné. Les deux mots de passe et l'email client sont vides
+- **[V]** Ne couvre pas l'écriture directe sur `report` avant le départ
 - **[X]** Aucun test unitaire, aucun test d'intégration
 
 **Pourquoi ce fichier existe :** les dix défauts ont tous survécu à des
@@ -558,7 +942,9 @@ C'est la seule famille de contrôle qui aurait pu les voir.
 - **[V]** Réception et liste des missions
 - **[V]** Acceptation et refus
 - **[V]** Check-in / check-out et rapport
-- **[X]** **Aucun de ces cinq écrans n'a été ouvert.** C'est le même vide que
+- **[V]** Écran d'exécution `(agent)/mission/[id]`, **atteignable** depuis
+  l'accueil et la liste, et **pré-rendu par `expo export`**
+- **[X]** **Aucun de ces écrans n'a été ouvert.** C'est le même vide que
   l'étape 6, mais ici il porte sur tout le parcours agent.
 
 ### Étapes 8 à 13
@@ -876,6 +1262,14 @@ Quatre règles en découlent, et elles s'appliquent à tout contrôle ajouté :
 | 2026-09-28 | `mission/new` déclaré dans le `_layout` client avec `href: null` : il apparaissait comme un onglet fantôme depuis l'origine |
 | 2026-09-28 | **Check-in / check-out et rapport** codés. `.select()` retiré de `checkIn` et `checkOut` — troisième occurrence du motif de P1, attrapé avant câblage. Contrôle **23** ajouté : les droits d'UPDATE des 7 colonnes de pointage n'étaient mesurés par rien, alors que le contrôle 20 mesurait ceux de l'INSERT |
 | 2026-09-28 | **Migration `20260928002100` APPLIQUÉE.** Contrôle 22 au vert : sociétés lisibles, `FORCE` actif sur les 2 tables, fonction publique présente. Contrôle 4 toujours à 37 — la politique a **remplacé** l'ancienne. **22 contrôles sur 22** |
+| 2026-09-29 | **DÉFAUT 11 trouvé EN VÉRIFIANT** : `dist-web/` est gitignoré mais n'était pas dans les `ignores` d'`eslint.config.js`. Le premier `expo export` suffisait donc à faire échouer `npx eslint .` avec **5 356 erreurs** sur le bundle minifié (`__r is not defined`), code source sain. Signal vert/rouge devenu illisible, et piège pour la vérification suivante. Corrigé, puis `npx eslint .` = **exit 0 avec `dist-web/` présent** |
+| 2026-09-29 | **ÉCRAN D'EXÉCUTION DE MISSION RECONSTRUIT.** `src/app/(agent)/mission/[id].tsx` était resté à moitié écrit — JSX non fermé, `tsc` et `eslint` en échec. Terminé : poste actif navy avec chrono **figé** au départ, statut de la mission, consignes du site, rapport éditable, pointages d'arrivée et de départ dans l'ordre où la base les autorise. `description` et `special_requirements` ajoutés à la sélection de `getAgentMissions` — **aucune migration n'était nécessaire**, `can_view_mission` ouvre déjà la ligne à l'agent affecté. `enregistrerRapport` : première écriture directe d'un écran, limitée à `report`, dont le **contrôle 23 mesure déjà le droit**. Route déclarée `href: null` (pas d'onglet fantôme) et atteignable depuis l'accueil et la liste. `tsc` vide, `eslint .` vide, `check:supabase` conforme, `expo export` produit `/(agent)/mission/[id]` (25 Ko). **Aucun rendu à l'écran** |
+| 2026-09-29 | **Lot 1 — « SecuGuard Enterprise » livré.** Audit des 11 maquettes, puis réécriture du design system : marque **noir `#000000`** au lieu du teal `#00677F`, fond `#FCF8FA`, navy `#131B2E`, ambre `#F59E0B` / `#FCDEB5`. **La paire de polices est inversée** : Hanken Grotesk passe en titres (600/700), Plus Jakarta Sans en texte courant (400/500), Manrope désinstallé. Splash : fond bleu `#208AEF` → navy `#131B2E` et **image de logo retirée** — le logo reste à produire. `name`/`slug`/`scheme` passés à `secuguard`, `userInterfaceStyle` forcé à `light`, fond de l'icône adaptative passé au navy. Tokens, 6 primitives, `AppHeader`, `tabBarOptions` et écran d'accueil client réécrits. **Aucun des 11 écrans maquettés n'est reconstruit** |
+| 2026-09-29 | **Écran d'exécution : trois blocs ajoutés** — durée prévue dans la pastille du chrono (`end_time - start_time`, « · dépassée » écrit en toutes lettres, retard mesuré depuis l'arrivée réelle), « Journal de vacation » (`created_at`, `check_in_time`, `check_out_time` ; `updated_at` écarté car il bouge à chaque écriture), « Consignes du client » remontées en tête. Sept blocs de la maquette restent sans source et **ne sont pas simulés** : NFC, rondes, PTI, batterie, MCE, caméra, code portail en colonne. `expo-battery` et `mission_events` refusés, la seconde relevant de l'étape 11. `tsc`, `eslint .`, `check:supabase`, `expo export` verts. **Aucun rendu à l'écran** |
+| 2026-09-29 | **`test:parcours` : tentative de lancement, bloquée.** `.env.test` existe et est ignoré par git, mais seul `TEST_AGENT_EMAIL` est renseigné ; les deux mots de passe et l'email client sont vides. Commande **non exécutée**, aucun identifiant inventé. Le test ne couvre de toute façon pas `enregistrerRapport`. Rapport mis à jour : statut « amorcée, bloquée », état de `.env.test`, périmètre du test. **Aucune vérification nouvelle** |
+| 2026-09-29 | **Audit de reprise, à partir du cadrage « développeur senior » — aucun code écrit.** Mesuré : Node 24.15.0, Expo 57.0.27, `tsc` exit 0, `npx eslint .` exit 0, `check:supabase` conforme, `.env` avec les 2 variables Supabase renseignées. **Risque relevé : 105 entrées non commitées (56 fichiers modifiés ou supprimés, 49 non suivis), +4 344 / −1 181 lignes.** Le dernier commit date du 2026-09-28 : tout le design system, l'accueil agent, l'écran d'exécution de mission et les services société / documents / administration n'existent que dans le répertoire de travail. Aucune sauvegarde git. **Écart avec l'architecture cible :** `features/chat`, `payments`, `notifications`, `reviews` sont des dossiers vides ; `expo-notifications`, Stripe, cartographie et `expo-location` ne sont pas installés (cohérent avec les étapes 10 et 11 non commencées) |
+
+
 
 ---
 
@@ -892,8 +1286,12 @@ npm run check:supabase # doit dire « RESULTAT : conforme »
 ```
 
 Et, pour la base, `supabase/verification/VERIFICATION_RAPIDE.sql` dans le SQL
-Editor : **21 lignes, 0 `ALERTE`**.
+Editor : **26 lignes, 0 `ALERTE`** (le compte a évolué de 21 à 26 le 2026-09-28).
 
 > Un vert sur `check:supabase` ne vaut pas validation fonctionnelle. Le script
 > teste le rôle `anon` et ne dit **rien** de ce qu'un utilisateur connecté voit.
 > Seul un test à l'écran, avec un vrai compte, prouve qu'un parcours marche.
+
+> `npx expo export` **puis** `npx eslint .` : cet ordre est désormais sans
+> risque, `dist-web/**` étant ignoré. Avant le correctif du 2026-09-29, le
+> second échouait dès que le premier avait réussi.
