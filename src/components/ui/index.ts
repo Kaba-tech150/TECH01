@@ -1,5 +1,16 @@
+export { ActionTile } from './ActionTile';
+export type { TuileIconVariant } from './ActionTile';
+export { BandeauNavy } from './BandeauNavy';
+export type { BandeauNavyAction } from './BandeauNavy';
+export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
-export { Badge } from './Badge';
-export { Typography } from './Typography';
+export { CatalogueRow } from './CatalogueRow';
+export { Interrupteur } from './Interrupteur';
+export { LigneReglage } from './LigneReglage';
+export { Puce } from './Puce';
+export type { PuceVariant } from './Puce';
 export { SectionHeader } from './SectionHeader';
+export { StatTile } from './StatTile';
+export type { StatTileIconVariant } from './StatTile';
+export { Typography } from './Typography';

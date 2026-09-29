@@ -1,12 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, ViewStyle, StyleProp } from 'react-native';
 import {
   BORDER_RADIUS,
   COLORS,
   FONT_FAMILIES,
   FONT_SIZES,
-  HAIRLINE_CYAN,
+  HAIRLINE,
   SPACING,
 } from '@/constants';
 
@@ -27,10 +26,13 @@ interface ButtonProps {
 /**
  * Bouton d'action.
  *
- * La variante `primary` est un aplat cyan `#00D2FF`. Le texte y est donc
- * `onCyan` et non blanc : le blanc sur ce cyan plafonne à 1,8:1 de contraste,
- * ce qui le rend illisible en lumière du jour. `onCyan` monte à 4,6:1 tout en
- * conservant le contraste de luminance de la maquette.
+ * La variante `primary` est un aplat NOIR `#000000` : c'est la couleur des
+ * boutons de la maquette (« Créer un compte », « Se connecter à l'espace
+ * sécurisé », « Confirmer l'accès sécurisé »). Le texte y est donc `onPrimary`
+ * (blanc), qui monte à 21:1 de contraste.
+ *
+ * Le libellé n'est PAS en capitales. La maquette écrit « Se connecter à l'espace
+ * sécurisé » en casse de phrase, en Hanken Grotesk 600.
  */
 export function Button({
   title,
@@ -48,15 +50,13 @@ export function Button({
   const isOutline = variant === 'outline';
   const isGhost = variant === 'ghost';
 
-  const textColor = isPrimary
-    ? COLORS.onCyan
-    : isDanger
-      ? COLORS.onWhite
-      : isSecondary || isOutline
-        ? COLORS.cobalt
-        : isGhost
-          ? COLORS.textSecondary
-          : COLORS.onWhite;
+  const textColor = isPrimary || isDanger
+    ? COLORS.onPrimary
+    : isSecondary || isOutline
+      ? COLORS.text
+      : isGhost
+        ? COLORS.textSecondary
+        : COLORS.onPrimary;
 
   const iconColor = isGhost ? COLORS.textSecondary : textColor;
 
@@ -89,13 +89,14 @@ export function Button({
         size === 'md' ? styles.sizeMd : styles.sizeLg,
         !fullWidth && styles.notFullWidth,
         isPrimary && styles.primary,
+        isDanger && styles.danger,
         !isPrimary && !isDanger && styles.secondaryBase,
         isSecondary && styles.secondary,
         isOutline && styles.outline,
         isGhost && styles.ghost,
         disabled && styles.disabled,
-        // `pressed` pilote une opacité et non un `activeOpacity` : ce dernier
-        // est ignoré sur les surfaces qui portent un dégradé.
+        // `pressed` pilote une opacité et non un `activeOpacity`, qui
+        // n'est pas rendu sur un `Pressable` dont le style est une fonction.
         pressed && !disabled && styles.pressed,
         style,
       ]}
@@ -104,30 +105,18 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled }}
     >
-      {isDanger ? (
-        <LinearGradient
-          colors={['#E53935', '#B71C1C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.dangerFill}
-        >
-          {content}
-        </LinearGradient>
-      ) : (
-        content
-      )}
+      {content}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     width: '100%',
-    overflow: 'hidden',
   },
   sizeLg: {
     // 48px : cible tactile minimale recommandée par la maquette.
@@ -142,14 +131,23 @@ const styles = StyleSheet.create({
     width: 'auto',
   },
   primary: {
-    backgroundColor: COLORS.cyan,
+    backgroundColor: COLORS.primary,
+  },
+  /**
+   * Aplat rouge plein, sans dégradé.
+   *
+   * La maquette ne dessine aucun dégradé : le bandeau SOS est un rouge saturé
+   * uniforme, pour qu'il ne puisse pas être confondu avec un bouton ordinal.
+   */
+  danger: {
+    backgroundColor: COLORS.dangerSolid,
   },
   secondaryBase: {
     backgroundColor: COLORS.surfaceContainerLowest,
   },
   secondary: {
     borderWidth: 1,
-    borderColor: HAIRLINE_CYAN,
+    borderColor: HAIRLINE,
   },
   outline: {
     borderWidth: 1,
@@ -158,13 +156,6 @@ const styles = StyleSheet.create({
   },
   ghost: {
     backgroundColor: 'transparent',
-  },
-  dangerFill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'stretch',
-    paddingHorizontal: SPACING.lg,
   },
   disabled: {
     opacity: 0.4,
@@ -176,10 +167,7 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   text: {
-    fontFamily: FONT_FAMILIES.bold,
-    // Lapsus du design : les libellés d'action sont en capitales espacées.
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+    fontFamily: FONT_FAMILIES.semibold,
   },
   textMd: {
     fontSize: FONT_SIZES.sm,

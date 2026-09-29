@@ -23,10 +23,10 @@ interface TypographyProps {
 /**
  * Base typographique.
  *
- * Les titres utilisent Plus Jakarta Sans, le texte courant Manrope. Chaque
- * variante désigne un fichier de fonte précis : sur Android, `fontWeight` seul
- * ne suffit pas à sélectionner la bonne graisse dans une famille chargée
- * dynamiquement, il faut passer par `fontFamily`.
+ * Les titres utilisent Hanken Grotesk, le texte courant Plus Jakarta Sans.
+ * Chaque variante désigne un fichier de fonte précis : sur Android,
+ * `fontWeight` seul ne suffit pas à sélectionner la bonne graisse dans une
+ * famille chargée dynamiquement, il faut passer par `fontFamily`.
  */
 export function Typography({
   children,

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
+import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
 
 interface SectionHeaderProps {
   title: string;
@@ -55,14 +55,14 @@ const styles = StyleSheet.create({
   action: {
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
-    borderRadius: SPACING.xs,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.primaryLight,
   },
   actionText: {
     fontFamily: FONT_FAMILIES.semibold,
     fontSize: FONT_SIZES.xs,
-    color: COLORS.primary,
-    letterSpacing: 0.6,
+    color: COLORS.primaryContainer,
+    letterSpacing: 0.5, // 0.05em, comme `label-sm` de la maquette
     textTransform: 'uppercase',
   },
   trailing: {

@@ -1,4 +1,4 @@
-import { COLORS, FONT_FAMILIES, FONT_SIZES, HAIRLINE_CYAN_SOFT, SHADOWS } from '@/constants';
+import { COLORS, FONT_FAMILIES, FONT_SIZES, HAIRLINE_SOFT, SHADOWS } from '@/constants';
 
 /**
  * Options de barre d'onglets communes aux quatre espaces de rôle.
@@ -6,7 +6,7 @@ import { COLORS, FONT_FAMILIES, FONT_SIZES, HAIRLINE_CYAN_SOFT, SHADOWS } from '
  * POURQUOI UN MODULE PARTAGÉ
  *
  * Les quatre groupes — client, agent, société, administrateur — ont le même
- * gabarit d'onglets : mêmes teintes, même poids de libellé, même filet cyan,
+ * gabarit d'onglets : mêmes teintes, même poids de libellé, même filet neutre,
  * même ombre. Seules les icônes changent. Dupliquer ces options dans les
  * quatre layouts avait produit trois versions divergentes : les espaces agent,
  * société et administrateur étaient restés sur des emojis, sans le style de
@@ -20,8 +20,9 @@ import { COLORS, FONT_FAMILIES, FONT_SIZES, HAIRLINE_CYAN_SOFT, SHADOWS } from '
  * CHOIX DES TEINTES
  *
  * `color` est fourni par React Navigation : la teinte active suit
- * `tabBarActiveTintColor`. On retient `primary` (teal) et non `cyan` — un
- * libellé de 11px en `#00D2FF` sur fond clair est illisible.
+ * `tabBarActiveTintColor`. On retient `primary` (noir) et non l'ambre : un
+ * libellé de 10px en ambre sur fond clair plafonne sous le seuil de lisibilité.
+ * L'ambre ne sert qu'aux pips et aux liserés d'état actif.
  */
 export const TAB_BAR_SCREEN_OPTIONS = {
   headerShown: false,
@@ -33,7 +34,7 @@ export const TAB_BAR_SCREEN_OPTIONS = {
   },
   tabBarStyle: {
     backgroundColor: COLORS.background,
-    borderTopColor: HAIRLINE_CYAN_SOFT,
+    borderTopColor: HAIRLINE_SOFT,
     ...SHADOWS.header,
   },
 } as const;

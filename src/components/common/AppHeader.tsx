@@ -3,7 +3,7 @@ import {
   COLORS,
   FONT_FAMILIES,
   FONT_SIZES,
-  HAIRLINE_CYAN_SOFT,
+  HAIRLINE_SOFT,
   SHADOWS,
   SPACING,
 } from '@/constants';
@@ -27,16 +27,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
    Il redéfinissait auparavant ses propres couleurs, polices,
    tailles et espacements, avec des valeurs en désaccord avec
    la maquette : fond gris froid au lieu de la surface Material,
-   bleu `#0066FF` au lieu du teal de marque, et surtout des
+   bleu `#0066FF` au lieu du noir de marque, et surtout des
    polices forcées à `'System'`, qui écrasaient les familles
-   Plus Jakarta Sans / Manrope chargées au démarrage. D'où un
-   en-tête visuellement étranger au reste de l'application.
+   Hanken Grotesk / Plus Jakarta Sans chargées au démarrage. D'où
+   un en-tête visuellement étranger au reste de l'application.
 
    Le mappage retenu pour les écarts :
-     - fond      #eff0f5 -> COLORS.background          (#FAFAFF)
-     - marque    #0066FF -> COLORS.primary             (#00677F)
-     - surfaces  #E8F0FF -> COLORS.surfaceContainerHigh(#E3E7FF)
-     - polices   System  -> FONT_FAMILIES (titles/texte)
+     - fond      #eff0f5 -> COLORS.background          (#FCF8FA)
+     - marque    #0066FF -> COLORS.primary             (#000000)
+     - surfaces  #E8F0FF -> COLORS.surfaceContainerHigh(#EAE7E9)
+     - polices   System  -> FONT_FAMILIES (titres/texte)
    ========================================================= */
 
 /* =========================================================
@@ -99,7 +99,7 @@ export function AppHeader({
         <View style={styles.brand}>
 
           <Image
-            source={require('@/assets/images/icon.png')}
+            source={require('@/assets/images/secuguard-mark.png')}
             style={styles.logo}
             contentFit="contain"
           />
@@ -110,7 +110,7 @@ export function AppHeader({
             <View style={styles.titleRow}>
 
               <Text style={styles.title}>
-                Secu
+                SecuGuard
               </Text>
 
              
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
 
     borderBottomWidth: 1,
 
-    borderBottomColor: HAIRLINE_CYAN_SOFT,
+    borderBottomColor: HAIRLINE_SOFT,
 
     ...SHADOWS.header,
   },
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 3,
 
-    backgroundColor: COLORS.cyan,
+    backgroundColor: COLORS.accent,
   },
 
   subtitle: {

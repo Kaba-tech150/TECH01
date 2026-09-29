@@ -2,8 +2,8 @@ import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import {
   BORDER_RADIUS,
   COLORS,
-  HAIRLINE_COBALT,
-  HAIRLINE_CYAN,
+  HAIRLINE,
+  HAIRLINE_ACCENT,
   SHADOWS,
   SPACING,
 } from '@/constants';
@@ -14,7 +14,7 @@ interface CardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   variant?: CardVariant;
-  /** Ajoute le liseré cyan de 1px sur le bord supérieur (signature de la marque). */
+  /** Ajoute le liseré ambre de 1px sur le bord supérieur (signature de la marque). */
   accent?: boolean;
   padding?: number;
   /**
@@ -93,13 +93,13 @@ const styles = StyleSheet.create({
   secondary: {
     backgroundColor: COLORS.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: HAIRLINE_CYAN,
+    borderColor: HAIRLINE,
     ...SHADOWS.card,
   },
   elevated: {
     backgroundColor: COLORS.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: HAIRLINE_COBALT,
+    borderColor: COLORS.border,
     ...SHADOWS.raised,
   },
   ghost: {
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 1,
-    backgroundColor: 'rgba(0, 210, 255, 0.35)',
+    height: 2,
+    backgroundColor: HAIRLINE_ACCENT,
     zIndex: 1,
   },
 });

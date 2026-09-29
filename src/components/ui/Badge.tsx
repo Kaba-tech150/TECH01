@@ -12,16 +12,19 @@ interface BadgeProps {
 /**
  * Pastille d'état.
  *
- * L'ambre de la maquette est réservé aux accréditations officielles ; le
- * `warning` reste donc volontairement saturé, et non pastel comme avant, pour
- * ne pas être confondu avec un statut de mission.
+ * Les aplats sont ceux de la maquette, pas des teintes construites à la main :
+ *   - `primary`   : bleu pâle `#DAE2FD` sur texte navy — le badge
+ *                   « PLATEFORME NATIONALE CERTIFIÉE CNAPS » et les
+ *                   « Excellent / Conforme / Impeccable » de l'évaluation.
+ *   - `warning`   : ambre pâli `#FCDEB5` — l'ambre est réservé aux
+ *                   accréditations et états actifs, jamais à un statut d'alerte.
  */
 export function Badge({ text, variant = 'primary', style }: BadgeProps) {
   const palette: Record<BadgeVariant, { bg: string; fg: string; border?: string }> = {
-    primary: { bg: 'rgba(0, 210, 255, 0.12)', fg: COLORS.primary },
-    success: { bg: 'rgba(0, 200, 83, 0.12)', fg: '#00713B' },
-    warning: { bg: 'rgba(243, 156, 18, 0.12)', fg: '#B36B00', border: COLORS.warning },
-    error: { bg: 'rgba(186, 26, 26, 0.10)', fg: COLORS.error },
+    primary: { bg: COLORS.primaryLight, fg: COLORS.primaryContainer },
+    success: { bg: COLORS.successSurface, fg: COLORS.success },
+    warning: { bg: COLORS.accentSurface, fg: COLORS.onAccent },
+    error: { bg: COLORS.errorSurface, fg: COLORS.onErrorContainer },
     neutral: { bg: COLORS.surfaceContainerHigh, fg: COLORS.textSecondary },
   };
 
