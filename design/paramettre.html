@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary-fixed-dim": "#dec29a", "primary-fixed": "#dae2fd", "on-surface-variant": "#45464d", "surface-container-low": "#f6f3f5", "on-tertiary-container": "#98805d", "surface-container-highest": "#e4e2e4", "secondary-fixed": "#d5e3fd", "on-primary": "#ffffff", "surface-container-high": "#eae7e9", "inverse-surface": "#303032", "on-tertiary-fixed-variant": "#574425", "secondary": "#515f74", "surface-dim": "#dcd9db", "on-secondary-container": "#57657b", "on-secondary-fixed-variant": "#3a485c", "surface-container-lowest": "#ffffff", "surface": "#fcf8fa", "inverse-on-surface": "#f3f0f2", "surface-bright": "#fcf8fa", "background": "#fcf8fa", "on-error-container": "#93000a", "surface-container": "#f0edef", "secondary-fixed-dim": "#b9c7e0", "on-tertiary": "#ffffff", "on-primary-fixed": "#131b2e", "error": "#ba1a1a", "surface-variant": "#e4e2e4", "on-primary-container": "#7c839b", "on-surface": "#1b1b1d", "outline-variant": "#c6c6cd", "tertiary-container": "#271901", "tertiary": "#000000", "primary": "#000000", "primary-fixed-dim": "#bec6e0", "on-background": "#1b1b1d", "secondary-container": "#d5e3fd", "error-container": "#ffdad6", "on-secondary": "#ffffff", "surface-tint": "#565e74", "tertiary-fixed": "#fcdeb5", "on-primary-fixed-variant": "#3f465c", "on-secondary-fixed": "#0d1c2f", "inverse-primary": "#bec6e0", "primary-container": "#131b2e", "on-error": "#ffffff", "on-tertiary-fixed": "#271901", "outline": "#76777d" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.25rem", "space-xl": "2.5rem", "space-md": "1rem", "margin": "2rem", "space-sm": "0.5rem", "gutter": "1.5rem", "space-lg": "1.5rem" }, fontFamily: { "label-md": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"], "body-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "label-sm": ["Hanken Grotesk"], "headline-md": ["Hanken Grotesk"], "body-sm": ["Plus Jakarta Sans"], "headline-sm": ["Hanken Grotesk"] }, fontSize: { "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }], "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }], "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }], "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }], "label-sm": ["10px", { lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "600" }], "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }], "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }], "headline-sm": ["18px", { lineHeight: "24px", fontWeight: "600" }] } } } };</script><style>@layer base { html, body { width: 100%; margin: 0; padding: 0; } body { overscroll-behavior-y: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">shield</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">SecuGuard</span><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider leading-tight">Enterprise</span></div></div><div class="flex items-center gap-space-xs"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-[24px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-error"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 ml-space-xs"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-screen"><div class="flex flex-col w-full px-gutter pb-space-xl space-y-space-lg">
+<!-- Header section tag & greeting -->
+<div class="flex items-center justify-between pt-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Console Opérateur</span>
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Profil &amp; Paramètres</h1>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-1 bg-surface-container rounded-full shadow-sm">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface">Session Chiffrée</span>
+</div>
+</div>
+<!-- User Identity Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col space-y-space-md">
+<div class="flex items-start gap-space-md">
+<div class="relative shrink-0">
+<div class="w-16 h-16 rounded-xl overflow-hidden shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Portrait photography of Marc Dupont, a confident male French security director in a dark navy tailored suit and subtle lapel pin, soft neutral background, corporate executive lighting, professional demeanor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDewQAvIeJFveVEH_xTk4WLBMAgLzBCZLJKl2ZoAXoPPtH-CBTG1IBJ34drqxKYC8n6vrLVNh3hav3TRZoFc9qtLDBqTJiD92r25Qiul7wUkwAaEUlQ_eXaWDJbOXvG-iE-H2iVx6KfELrx_r2-w58PeTGQVbYKeOBscf9XRbIdTqB6EEPs3LResji5OdjijzXWYpeHVEiQ_uCOLprRjmNl5memrKiWKklHqkqwRB0rSphUYBfjzVzF"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-surface-container-lowest p-0.5 rounded-full shadow">
+<div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-on-primary" title="Compte Vérifié CNAPS">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Marc Dupont</span>
+<span class="bg-surface-container px-2 py-0.5 rounded-full font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">CNAPS Certifié</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant mt-0.5">Directeur Sûreté &amp; Sécurité</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant/80">NexGuard Technologies SAS</span>
+</div>
+</div>
+<!-- Tier & Matricule Meta -->
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<div class="bg-surface-container-low rounded-lg p-space-sm flex flex-col justify-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Matricule ID</span>
+<span class="font-label-md text-label-md text-on-surface mt-0.5">#CL-8849-FR</span>
+</div>
+<div class="bg-secondary-container/30 rounded-lg p-space-sm flex flex-col justify-center">
+<span class="font-label-sm text-label-sm text-on-secondary-container uppercase tracking-wider">Accréditation</span>
+<span class="font-label-md text-label-md text-on-surface flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-tertiary-fixed-dim">token</span>
+          Tier 3 (FIDO2 / 2FA)
+        </span>
+</div>
+</div>
+<button class="w-full mt-space-xs bg-surface-container hover:bg-surface-container-high transition-colors py-2.5 px-space-md rounded-lg flex items-center justify-center gap-space-sm text-on-surface font-label-md text-label-md" type="button">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+      Modifier le profil professionnel
+    </button>
+</div>
+<!-- Security Status Mini Banner -->
+<div class="bg-primary text-on-primary rounded-xl p-space-md shadow-md flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed-dim">shield_lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">Poste de Contrôle Sécurisé</span>
+<span class="font-body-sm text-body-sm text-on-primary-container">Chiffrement AES-GCM 256 bits</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-lowest/20 px-2.5 py-1 rounded-full text-on-primary uppercase tracking-wider">Actif</span>
+</div>
+<!-- Section 1: Sécurité & Accès -->
+<div class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">lock</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Sécurité &amp; Accès</span>
+</div>
+<span class="font-label-sm text-label-sm text-emerald-600 font-bold">Conforme ANSSI</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- 2FA Toggle -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer" onclick="toggleSwitch('toggle-2fa')">
+<div class="flex items-start gap-space-sm pr-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">phonelink_lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Double authentification (2FA)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">SMS prioritaire + Clé TOTP active</span>
+</div>
+</div>
+<div class="w-11 h-6 rounded-full bg-primary flex items-center p-0.5 shrink-0 transition-colors" id="toggle-2fa">
+<div class="w-5 h-5 rounded-full bg-on-primary shadow-sm transform translate-x-5 transition-transform duration-200"></div>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Biometry Toggle -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer" onclick="toggleSwitch('toggle-bio')">
+<div class="flex items-start gap-space-sm pr-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">fingerprint</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Biométrie (Face ID / Empreinte)</span>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface-variant px-1.5 py-0.2 rounded">FIDO2</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Déverrouillage rapide des accès locaux</span>
+</div>
+</div>
+<div class="w-11 h-6 rounded-full bg-primary flex items-center p-0.5 shrink-0 transition-colors" id="toggle-bio">
+<div class="w-5 h-5 rounded-full bg-on-primary shadow-sm transform translate-x-5 transition-transform duration-200"></div>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Password Change -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">password</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Mot de passe principal</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Dernière modification : il y a 45 jours</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div>
+</button>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Active Sessions -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">devices</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Appareils &amp; Sessions actives</span>
+<span class="font-label-sm text-label-sm bg-primary text-on-primary px-2 py-0.5 rounded-full">2 connectés</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">iPhone 15 Pro (Ce poste), Mac M3 Paris</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</button>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Emergency SOS PIN -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-error-container/40 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-error">sos</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Code PIN d'urgence SOS</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Alerte silencieuse en cas de contrainte</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface px-2.5 py-1 rounded-full uppercase tracking-wider">Configuré</span>
+</div>
+</div>
+</div>
+<!-- Section 2: Notifications & Alertes Opérationnelles -->
+<div class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">notifications_active</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Notifications &amp; Alertes</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Flux Prioritaire</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Critical Alerts Toggle -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer" onclick="toggleSwitch('toggle-sos')">
+<div class="flex items-start gap-space-sm pr-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">crisis_alert</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Alertes critiques &amp; SOS</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Priorité max • Contourne le mode 'Ne pas déranger'</span>
+</div>
+</div>
+<div class="w-11 h-6 rounded-full bg-primary flex items-center p-0.5 shrink-0 transition-colors" id="toggle-sos">
+<div class="w-5 h-5 rounded-full bg-on-primary shadow-sm transform translate-x-5 transition-transform duration-200"></div>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Missions Updates Toggle -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer" onclick="toggleSwitch('toggle-missions')">
+<div class="flex items-start gap-space-sm pr-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">route</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Missions &amp; Rondes de garde</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Prises de poste, déviations et pointages MCE</span>
+</div>
+</div>
+<div class="w-11 h-6 rounded-full bg-primary flex items-center p-0.5 shrink-0 transition-colors" id="toggle-missions">
+<div class="w-5 h-5 rounded-full bg-on-primary shadow-sm transform translate-x-5 transition-transform duration-200"></div>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Incident Reports Toggle -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer" onclick="toggleSwitch('toggle-reports')">
+<div class="flex items-start gap-space-sm pr-space-md">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">description</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Rapports d'incident &amp; Main courante</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Horodatage sécurisé SHA-256 certifié</span>
+</div>
+</div>
+<div class="w-11 h-6 rounded-full bg-surface-container-highest flex items-center p-0.5 shrink-0 transition-colors" id="toggle-reports">
+<div class="w-5 h-5 rounded-full bg-on-primary shadow-sm transform translate-x-0 transition-transform duration-200"></div>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Communication Channels Selector -->
+<div class="p-space-md flex flex-col space-y-space-sm bg-surface-container-low/40">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider">Canaux de notification</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Multi-canaux</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-container-lowest rounded-lg p-2 flex items-center justify-center gap-1.5 shadow-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+<span class="font-label-md text-label-md">Push App</span>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-2 flex items-center justify-center gap-1.5 shadow-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+<span class="font-label-md text-label-md">SMS Direct</span>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-2 flex items-center justify-center gap-1.5 shadow-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+<span class="font-label-md text-label-md">Email Pro</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Documents & Conformité Réglementaire -->
+<div class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">policy</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Conformité &amp; Légal</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Audit Trimestriel</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Justificatifs & Agrément -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">verified_user</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Agréments &amp; Justificatifs</span>
+<span class="font-label-sm text-label-sm bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">3 validés</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Kbis NexGuard, Carte Pro CNAPS, CNI</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</button>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Electronic Signature Delegation -->
+<div class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">draw</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Délégation de signature électronique</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Certificat eIDAS niveau avancé</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface px-2.5 py-1 rounded-full uppercase tracking-wider">Active</span>
+</div>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- GDPR & Export Data -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface">download_for_offline</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Export des données &amp; Registre RGPD</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Archives d'accès, journaux et vidéosurveillance</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Operational Location / Base Widget -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-on-surface">location_on</span>
+<span class="font-label-md text-label-md text-on-surface">Centre Opérationnel Principal (PC Sûreté)</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Paris 8e</span>
+</div>
+<div class="w-full h-24 rounded-lg bg-cover bg-center overflow-hidden relative shadow-inner" data-location="Paris, France" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDTquPahwin57B8RSDuQtACK5LcKtZzUuDwsxjUxsWqr5uLrBoTsz0i1hfW0iyhcJEaP8r6OyEIWKjc3JB58COpk_tDwbOSVP227_jG62EiKi_aP5ppv-wNsM-tuRnLHFPtecEX07To4oFP9uh4fqxzYdjCnqWPlsMBx7ofH1zHL6qklj03dQXHNpdoImWr-6kWKrKaqHBLVDM4cYRN5GQ9wmQX_inn-XbgZipWv5mNqxAffIEYYWwN')">
+<div class="absolute inset-0 bg-primary/20 backdrop-blur-[0.5px] flex items-end p-space-sm">
+<span class="bg-surface-container-lowest/90 px-2 py-0.5 rounded text-on-surface font-label-sm text-label-sm">Poste Centralisé Alpha • Zone 1</span>
+</div>
+</div>
+</div>
+<!-- Section 4: Préférences Générales & Astreinte -->
+<div class="flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">settings</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Préférences Générales</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Language -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-on-surface">translate</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface">Langue de l'interface</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="font-body-md text-body-md font-medium">Français (FR)</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div>
+</button>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Appearance -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-on-surface">palette</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface">Thème visuel</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="font-body-md text-body-md font-medium">Automatique</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div>
+</button>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- 24/7 Hotline -->
+<a class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" href="tel:0800112233">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Astreinte Direction &amp; Support 24/7</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Ligne réservée aux incidents majeurs</span>
+</div>
+</div>
+<div class="bg-surface-container px-2.5 py-1 rounded-lg flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">call</span>
+<span class="font-label-md text-label-md">Direct</span>
+</div>
+</a>
+<div class="h-[1px] bg-surface-container-low mx-space-md"></div>
+<!-- Legal CSI -->
+<button class="p-space-md flex items-center justify-between hover:bg-surface-container-low transition-colors text-left w-full" type="button">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px] text-on-surface">gavel</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface">Conditions Générales &amp; Livre VI CSI</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Logout Section -->
+<div class="pt-space-xs flex flex-col space-y-space-md">
+<button class="w-full bg-error-container/30 hover:bg-error-container/50 active:scale-[0.99] transition-all py-3.5 px-space-md rounded-xl flex items-center justify-center gap-space-sm text-error font-headline-sm text-headline-sm shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+      Se déconnecter de la session
+    </button>
+<!-- Audit Footer -->
+<div class="flex flex-col items-center justify-center text-center space-y-1 py-space-xs">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Hébergement Certifié SecNumCloud • ANSSI France</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant/70">
+        SecuGuard Enterprise v2.4.0 (Build 8904)
+      </span>
+</div>
+</div>
+</div>
+<script>
+  function toggleSwitch(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const knob = el.firstElementChild;
+    const isChecked = knob.classList.contains('translate-x-5');
+
+    if (isChecked) {
+      knob.classList.remove('translate-x-5');
+      knob.classList.add('translate-x-0');
+      el.classList.remove('bg-primary');
+      el.classList.add('bg-surface-container-highest');
+    } else {
+      knob.classList.remove('translate-x-0');
+      knob.classList.add('translate-x-5');
+      el.classList.remove('bg-surface-container-highest');
+      el.classList.add('bg-primary');
+    }
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/85 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center w-16 h-12 text-on-surface-variant transition-colors" data-path="accueil" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm mt-0.5">Accueil</span></a><a class="flex flex-col items-center justify-center w-16 h-12 text-on-surface-variant transition-colors" data-path="rechercher" href="#"><span class="material-symbols-outlined text-[22px]">search</span><span class="font-label-sm text-label-sm mt-0.5">Rechercher</span></a><a class="flex flex-col items-center justify-center w-16 h-12 text-on-surface-variant transition-colors" data-path="missions" href="#"><span class="material-symbols-outlined text-[22px]">assignment</span><span class="font-label-sm text-label-sm mt-0.5">Missions</span></a><a class="flex flex-col items-center justify-center w-16 h-12 text-on-surface-variant transition-colors" data-path="profil-&amp;-parametres" href="#"><span class="material-symbols-outlined text-[22px]">manage_accounts</span><span class="font-label-sm text-label-sm mt-0.5">Profil</span></a></div></nav></body></html>

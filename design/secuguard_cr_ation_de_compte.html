@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-container": "#98805d", "on-error": "#ffffff", "primary-fixed": "#dae2fd", "outline": "#76777d", "surface-variant": "#e4e2e4", "surface-container-highest": "#e4e2e4", "inverse-on-surface": "#f3f0f2", "primary-container": "#131b2e", "secondary-container": "#d5e3fd", "inverse-surface": "#303032", "tertiary-container": "#271901", "on-primary-container": "#7c839b", "surface-tint": "#565e74", "on-primary-fixed-variant": "#3f465c", "error-container": "#ffdad6", "surface-container": "#f0edef", "surface-bright": "#fcf8fa", "secondary": "#515f74", "error": "#ba1a1a", "on-surface-variant": "#45464d", "tertiary-fixed": "#fcdeb5", "on-secondary-container": "#57657b", "outline-variant": "#c6c6cd", "secondary-fixed": "#d5e3fd", "surface-container-lowest": "#ffffff", "tertiary": "#000000", "surface-dim": "#dcd9db", "on-tertiary": "#ffffff", "on-secondary": "#ffffff", "on-error-container": "#93000a", "on-secondary-fixed-variant": "#3a485c", "on-primary": "#ffffff", "surface-container-high": "#eae7e9", "secondary-fixed-dim": "#b9c7e0", "primary-fixed-dim": "#bec6e0", "on-tertiary-fixed-variant": "#574425", "on-primary-fixed": "#131b2e", "tertiary-fixed-dim": "#dec29a", "on-secondary-fixed": "#0d1c2f", "background": "#fcf8fa", "on-tertiary-fixed": "#271901", "on-surface": "#1b1b1d", "surface": "#fcf8fa", "on-background": "#1b1b1d", "primary": "#000000", "inverse-primary": "#bec6e0", "surface-container-low": "#f6f3f5" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-lg": "1.5rem", "margin": "2rem", "space-xl": "2.5rem", "space-sm": "0.5rem", "space-md": "1rem", "gutter": "1.5rem" }, "fontFamily": { "label-sm": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"], "body-sm": ["Plus Jakarta Sans"], "label-md": ["Hanken Grotesk"], "headline-sm": ["Hanken Grotesk"], "body-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Hanken Grotesk"] }, "fontSize": { "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md antialiased selection:bg-secondary-container flex flex-col min-h-screen"><main class="flex-1 w-full bg-surface pt-safe pb-safe flex flex-col"><div class="flex flex-col w-full px-gutter pb-space-xl">
+<!-- Top Navigation & Progress Bar -->
+<div class="flex items-center justify-between py-space-md">
+<button aria-label="Retour" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="flex items-center space-x-2">
+<div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center text-surface-bright">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<span class="font-headline-sm text-headline-sm tracking-tight text-on-surface">SecuGuard</span>
+</div>
+<div class="w-10 h-10 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">shield</span>
+</div>
+</div>
+<!-- Step Bar indicator -->
+<div class="mt-space-xs mb-space-md bg-surface-container-low rounded-xl p-space-sm flex flex-col gap-1.5">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-on-surface font-semibold">Étape 1 sur 2 : Type de compte &amp; Profil</span>
+<span class="text-on-surface-variant font-medium">50%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-1/2 transition-all duration-300"></div>
+</div>
+</div>
+<!-- Hero Header -->
+<div class="mb-space-md">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight mb-1">
+      Rejoindre le réseau SecuGuard
+    </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+      Choisissez votre statut pour accéder aux services de sécurité certifiés.
+    </p>
+</div>
+<!-- Role Selector -->
+<div aria-label="Choix du profil" class="flex flex-col gap-space-sm mb-space-lg" id="role-selector" role="radiogroup">
+<!-- Option 1: Client / Entreprise (Selected by default) -->
+<div class="role-card cursor-pointer rounded-xl p-space-md bg-surface-container-lowest shadow-sm hover:shadow-md transition-all flex flex-col gap-space-xs" data-role="client" onclick="selectRole(this, 'client')">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-surface-bright flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">domain</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Client / Entreprise</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Commanditaire &amp; Donneur d'ordre</span>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-on-primary radio-indicator">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+        Commander des agents de sécurité, surveiller des sites et gérer la facturation B2B.
+      </p>
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined text-[12px] mr-1">bolt</span> Devis instantané
+        </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] mr-1">lock</span> Protection sous séquestre
+        </span>
+</div>
+</div>
+<!-- Option 2: Agent Indépendant -->
+<div class="role-card cursor-pointer rounded-xl p-space-md bg-surface-container-low hover:bg-surface-container-lowest transition-all flex flex-col gap-space-xs" data-role="agent" onclick="selectRole(this, 'agent')">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Agent Indépendant</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Certifié CNAPS / SSIAP</span>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center text-transparent radio-indicator">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+        Recevoir des missions rémunérées, gérer vos vacations et vos cartes pros CNAPS.
+      </p>
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] mr-1">payments</span> Virement SEPA express
+        </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] mr-1">event_available</span> Planning libre
+        </span>
+</div>
+</div>
+<!-- Option 3: Société de Gardiennage -->
+<div class="role-card cursor-pointer rounded-xl p-space-md bg-surface-container-low hover:bg-surface-container-lowest transition-all flex flex-col gap-space-xs" data-role="agency" onclick="selectRole(this, 'agency')">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">security</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Société de Gardiennage</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Agence &amp; Fournisseur de sécurité</span>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center text-transparent radio-indicator">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+        Déployer vos effectifs, répondre aux appels d'offres et centraliser vos contrats.
+      </p>
+<div class="flex flex-wrap gap-1.5 mt-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] mr-1">groups</span> Multi-agents
+        </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-[12px] mr-1">analytics</span> Gestion de flotte
+        </span>
+</div>
+</div>
+</div>
+<!-- Registration Form -->
+<form class="flex flex-col gap-space-md bg-surface-container-lowest rounded-xl p-space-md shadow-sm" id="signup-form" onsubmit="event.preventDefault();">
+<div class="flex items-center gap-2 pb-1">
+<span class="material-symbols-outlined text-[18px] text-on-surface">person_outline</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Informations de contact</h3>
+</div>
+<!-- Full name / Business name -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="org_name">
+<span id="name-label">Nom complet ou Raison sociale</span>
+<span class="text-on-surface-variant font-normal text-body-sm">Requis</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[20px]">badge</span>
+<input class="w-full bg-surface-container rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-highest transition-colors" id="org_name" name="org_name" placeholder="ex. NexGuard Technologies SAS" type="text"/>
+</div>
+</div>
+<!-- Corporate Email -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="pro_email">
+<span>Email professionnel</span>
+<span class="text-on-surface-variant font-normal text-body-sm">Validation du domaine</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[20px]">alternate_email</span>
+<input class="w-full bg-surface-container rounded-lg pl-10 pr-10 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-highest transition-colors" id="pro_email" name="pro_email" oninput="validateDomain(this.value)" placeholder="contact@entreprise-securite.fr" type="email"/>
+<span class="material-symbols-outlined absolute right-3 text-on-surface-variant text-[18px]" id="domain-badge">domain_verification</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1" id="domain-hint">
+<span class="material-symbols-outlined text-[14px]">info</span> Adresses institutionnelles et B2B recommandées
+      </p>
+</div>
+<!-- Mobile Phone -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="phone">
+<span>Numéro de téléphone mobile</span>
+<span class="text-on-surface-variant font-normal text-body-sm">2FA SMS</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[20px]">phone_iphone</span>
+<input class="w-full bg-surface-container rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-highest transition-colors" id="phone" name="phone" placeholder="+33 6 12 34 56 78" type="tel"/>
+</div>
+</div>
+<!-- Password -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between" for="password">
+<span>Mot de passe</span>
+<button class="text-on-surface-variant text-body-sm flex items-center gap-1" onclick="togglePasswordVisibility()" type="button">
+<span class="material-symbols-outlined text-[16px]" id="eye-icon">visibility</span>
+</button>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[20px]">lock</span>
+<input class="w-full bg-surface-container rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-highest transition-colors" id="password" name="password" oninput="checkStrength(this.value)" placeholder="••••••••••••" type="password"/>
+</div>
+<!-- Password Strength Meter -->
+<div class="bg-surface-container-high rounded-lg p-space-sm mt-1">
+<div class="flex items-center justify-between mb-1.5 font-label-sm text-label-sm">
+<span class="text-on-surface-variant font-medium">Niveau de sécurité :</span>
+<span class="text-on-surface font-semibold" id="strength-text">À compléter</span>
+</div>
+<div class="grid grid-cols-4 gap-1.5 mb-2">
+<div class="h-1 rounded-full bg-surface-variant transition-colors" id="bar-1"></div>
+<div class="h-1 rounded-full bg-surface-variant transition-colors" id="bar-2"></div>
+<div class="h-1 rounded-full bg-surface-variant transition-colors" id="bar-3"></div>
+<div class="h-1 rounded-full bg-surface-variant transition-colors" id="bar-4"></div>
+</div>
+<div class="grid grid-cols-2 gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-1" id="req-len"><span class="material-symbols-outlined text-[14px]">circle</span> 8+ caractères</span>
+<span class="flex items-center gap-1" id="req-upper"><span class="material-symbols-outlined text-[14px]">circle</span> 1 majuscule</span>
+<span class="flex items-center gap-1" id="req-num"><span class="material-symbols-outlined text-[14px]">circle</span> 1 chiffre</span>
+<span class="flex items-center gap-1" id="req-spec"><span class="material-symbols-outlined text-[14px]">circle</span> 1 symbole (@, #, $)</span>
+</div>
+</div>
+</div>
+<!-- Legal Checkbox -->
+<div class="mt-2 bg-surface-container-low rounded-lg p-space-sm flex items-start gap-space-sm">
+<input class="mt-1 w-4 h-4 rounded text-primary accent-primary bg-surface-container-lowest focus:ring-0 cursor-pointer" id="compliance-check" type="checkbox"/>
+<label class="font-body-sm text-body-sm text-on-surface cursor-pointer leading-tight" for="compliance-check">
+        J'atteste exercer ou commander des prestations en conformité avec le <strong class="font-semibold text-on-surface">livre VI du CSI (CNAPS)</strong> et accepter les Conditions Générales de SecuGuard.
+      </label>
+</div>
+<!-- CTA Button -->
+<button class="mt-space-xs w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-xl font-label-md text-label-md tracking-wider flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-all" type="submit">
+<span>Continuer vers la vérification (2/2)</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</form>
+<!-- Login Link -->
+<div class="mt-space-md text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+      Déjà inscrit ? 
+      <a class="text-on-surface font-semibold underline decoration-2 underline-offset-4 hover:text-primary transition-colors" href="#login">
+        Se connecter
+      </a>
+</p>
+</div>
+</div>
+<script>
+  function selectRole(element, role) {
+    const cards = document.querySelectorAll('.role-card');
+    cards.forEach(card => {
+      card.classList.remove('bg-surface-container-lowest', 'shadow-sm');
+      card.classList.add('bg-surface-container-low');
+      const radio = card.querySelector('.radio-indicator');
+      radio.classList.remove('bg-primary', 'text-on-primary');
+      radio.classList.add('bg-surface-container-highest', 'text-transparent');
+    });
+
+    element.classList.remove('bg-surface-container-low');
+    element.classList.add('bg-surface-container-lowest', 'shadow-sm');
+    const activeRadio = element.querySelector('.radio-indicator');
+    activeRadio.classList.remove('bg-surface-container-highest', 'text-transparent');
+    activeRadio.classList.add('bg-primary', 'text-on-primary');
+
+    const label = document.getElementById('name-label');
+    const input = document.getElementById('org_name');
+    if (role === 'client') {
+      label.textContent = 'Nom complet ou Raison sociale';
+      input.placeholder = 'ex. NexGuard Technologies SAS';
+    } else if (role === 'agent') {
+      label.textContent = 'Nom complet (Prénom et Nom)';
+      input.placeholder = 'ex. Alexandre Dumas';
+    } else {
+      label.textContent = 'Nom de l\'agence ou Raison sociale';
+      input.placeholder = 'ex. Elite Surveillance France';
+    }
+  }
+
+  function togglePasswordVisibility() {
+    const pwd = document.getElementById('password');
+    const icon = document.getElementById('eye-icon');
+    if (pwd.type === 'password') {
+      pwd.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      pwd.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  }
+
+  function validateDomain(email) {
+    const badge = document.getElementById('domain-badge');
+    const hint = document.getElementById('domain-hint');
+    if (!email || !email.includes('@')) {
+      badge.className = "material-symbols-outlined absolute right-3 text-on-surface-variant text-[18px]";
+      badge.textContent = "domain_verification";
+      hint.innerHTML = '<span class="material-symbols-outlined text-[14px]">info</span> Adresses institutionnelles et B2B recommandées';
+      return;
+    }
+    const domain = email.split('@')[1];
+    const freeDomains = ['gmail.com', 'hotmail.com', 'yahoo.fr', 'outlook.com', 'orange.fr'];
+    if (freeDomains.some(d => domain.toLowerCase().startsWith(d))) {
+      badge.className = "material-symbols-outlined absolute right-3 text-error text-[18px]";
+      badge.textContent = "warning";
+      hint.innerHTML = '<span class="material-symbols-outlined text-[14px] text-error">info</span> Fournisseur grand public détecté. Utilisez un domaine pro si possible.';
+    } else if (domain.includes('.')) {
+      badge.className = "material-symbols-outlined absolute right-3 text-on-surface text-[18px]";
+      badge.textContent = "verified";
+      hint.innerHTML = '<span class="material-symbols-outlined text-[14px] text-on-surface">check_circle</span> Domaine d\'entreprise identifié';
+    }
+  }
+
+  function checkStrength(val) {
+    const hasLen = val.length >= 8;
+    const hasUpper = /[A-Z]/.test(val);
+    const hasNum = /[0-9]/.test(val);
+    const hasSpec = /[^A-Za-z0-9]/.test(val);
+
+    updateReq('req-len', hasLen);
+    updateReq('req-upper', hasUpper);
+    updateReq('req-num', hasNum);
+    updateReq('req-spec', hasSpec);
+
+    const score = [hasLen, hasUpper, hasNum, hasSpec].filter(Boolean).length;
+    const bars = ['bar-1', 'bar-2', 'bar-3', 'bar-4'];
+    const text = document.getElementById('strength-text');
+
+    bars.forEach((barId, idx) => {
+      const el = document.getElementById(barId);
+      if (idx < score) {
+        if (score <= 1) el.className = 'h-1 rounded-full bg-error transition-colors';
+        else if (score <= 3) el.className = 'h-1 rounded-full bg-on-tertiary-container transition-colors';
+        else el.className = 'h-1 rounded-full bg-primary transition-colors';
+      } else {
+        el.className = 'h-1 rounded-full bg-surface-variant transition-colors';
+      }
+    });
+
+    if (score === 0) text.textContent = 'À compléter';
+    else if (score <= 1) text.textContent = 'Faible';
+    else if (score <= 3) text.textContent = 'Correct';
+    else text.textContent = 'Robuste & Conforme';
+  }
+
+  function updateReq(id, valid) {
+    const el = document.getElementById(id);
+    const icon = el.querySelector('span');
+    if (valid) {
+      el.classList.add('text-on-surface');
+      el.classList.remove('text-on-surface-variant');
+      icon.textContent = 'check_circle';
+      icon.style.color = '#000000';
+    } else {
+      el.classList.remove('text-on-surface');
+      el.classList.add('text-on-surface-variant');
+      icon.textContent = 'circle';
+      icon.style.color = '';
+    }
+  }
+</script></main></body></html>

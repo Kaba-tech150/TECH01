@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "inverse-on-surface": "#f3f0f2",
+          "tertiary-container": "#271901",
+          "on-secondary": "#ffffff",
+          "on-primary-fixed": "#131b2e",
+          "on-error-container": "#93000a",
+          "secondary-fixed-dim": "#b9c7e0",
+          "on-primary-container": "#7c839b",
+          "surface-container-high": "#eae7e9",
+          "surface-container-low": "#f6f3f5",
+          "error": "#ba1a1a",
+          "surface": "#fcf8fa",
+          "primary-fixed-dim": "#bec6e0",
+          "surface-container-lowest": "#ffffff",
+          "surface-dim": "#dcd9db",
+          "surface-container-highest": "#e4e2e4",
+          "on-secondary-container": "#57657b",
+          "secondary-container": "#d5e3fd",
+          "on-error": "#ffffff",
+          "background": "#fcf8fa",
+          "primary-container": "#131b2e",
+          "inverse-primary": "#bec6e0",
+          "surface-bright": "#fcf8fa",
+          "on-secondary-fixed": "#0d1c2f",
+          "tertiary-fixed-dim": "#dec29a",
+          "on-primary": "#ffffff",
+          "outline": "#76777d",
+          "secondary-fixed": "#d5e3fd",
+          "on-secondary-fixed-variant": "#3a485c",
+          "surface-variant": "#e4e2e4",
+          "error-container": "#ffdad6",
+          "on-primary-fixed-variant": "#3f465c",
+          "on-tertiary-fixed": "#271901",
+          "surface-tint": "#565e74",
+          "surface-container": "#f0edef",
+          "on-tertiary-container": "#98805d",
+          "on-tertiary-fixed-variant": "#574425",
+          "tertiary-fixed": "#fcdeb5",
+          "on-tertiary": "#ffffff",
+          "primary": "#000000",
+          "inverse-surface": "#303032",
+          "primary-fixed": "#dae2fd",
+          "outline-variant": "#c6c6cd",
+          "on-surface-variant": "#45464d",
+          "on-surface": "#1b1b1d",
+          "tertiary": "#000000",
+          "secondary": "#515f74",
+          "on-background": "#1b1b1d"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-sm": "0.5rem",
+          "space-xl": "2.5rem",
+          "space-lg": "1.5rem",
+          "space-xs": "0.25rem",
+          "margin": "2rem",
+          "gutter": "1.5rem",
+          "space-md": "1rem"
+        },
+        "fontFamily": {
+          "body-lg": ["Plus Jakarta Sans"],
+          "headline-md": ["Hanken Grotesk"],
+          "body-sm": ["Plus Jakarta Sans"],
+          "label-sm": ["Hanken Grotesk"],
+          "label-md": ["Hanken Grotesk"],
+          "body-md": ["Plus Jakarta Sans"],
+          "headline-lg": ["Hanken Grotesk"],
+          "headline-sm": ["Hanken Grotesk"]
+        }
+      }
+    }
+  }
+</script><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&amp;family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-primary/20"><header class="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl pt-safe border-b border-surface-container-highest/60"><div class="h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-md shadow-primary/20"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">security</span></div><span class="font-headline-md text-headline-sm tracking-tight text-on-surface font-bold">SecuGuard</span></div><div class="flex items-center gap-space-sm"><button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-all bg-surface-container hover:bg-surface-container-high rounded-full relative"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full ring-2 ring-surface"></span></button><div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-slate-700 text-on-primary flex items-center justify-center shadow-md ring-2 ring-surface-container-highest"><span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">person</span></div></div></div></header><main class="flex flex-col relative w-full px-gutter pt-20 pb-28 bg-surface flex-1"><div class="flex flex-col w-full gap-space-md">
+<!-- Progress / Step Indicator -->
+<div class="flex items-center justify-between px-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Étape 3 sur 3 : Règlement &amp; Engagement</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-5 h-1.5 rounded-full bg-primary"></span>
+</div>
+</div>
+<!-- Mission Overview Card -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm relative overflow-hidden">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex flex-col min-w-0">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container w-fit mb-1">
+<span class="material-symbols-outlined text-[14px]">local_police</span>
+<span class="font-label-sm text-label-sm font-semibold">SSIAP 2 • Incendie &amp; Événementiel</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Mission de Surveillance Nocturne</h2>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-bold uppercase shrink-0">10h Total</span>
+</div>
+<!-- Location & Timing Micro-Grid -->
+<div class="grid grid-cols-1 gap-2 pt-1">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0">pin_drop</span>
+<span class="font-body-sm text-body-sm truncate">14 Boulevard Haussmann, 75009 Paris</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-primary shrink-0">calendar_month</span>
+<span class="font-body-sm text-body-sm">Ven. 24 Oct 2025 • 20:00 → Sam. 06:00</span>
+</div>
+</div>
+</div>
+<!-- Assigned Operative Snapshot -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="relative shrink-0">
+<img class="w-12 h-12 rounded-xl object-cover shadow-sm" data-alt="Portrait professionnel d'un agent de sécurité d'élite homme nommé Marcus Vance, allure sobre en costume d'intervention sombre, regard confiant et rassurant, fond d'entreprise feutré et moderne" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC64VJbvUni4xUYK_wtANycTAnu-TSzRLHktWGmnRiVSWTXHsdCUx1KM1aoVYfQAsLKnxC6LVBfgf_UbhlW7HZVgstp9ZdhmlCibJtvptkjKGaEw4On6RHLElis324DorkC65SWVjsnaFG4vloMTS-LRFPWGgPgqeN1IYP-6RlsX8wKVDS0_Bj5aaV0yo69Shy47vFIx4NWoEoRsblxqC2lM0Dvl6aC9O_WnBAPHOrNNUZ-EaJGejJ8"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">Marcus Vance</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface font-label-sm text-label-sm shrink-0">CNAPS</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<div class="flex items-center gap-0.5 text-on-surface">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm font-bold">4.9</span>
+</div>
+<span class="text-on-surface-variant text-[11px]">• 412 missions sans incident</span>
+</div>
+</div>
+</div>
+<div class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-surface-container">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">badge</span>
+</div>
+</div>
+<!-- Detailed Cost Breakdown -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">Décomposition Tarifaire HT</span>
+<span class="font-label-sm text-label-sm text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded-full">Barème Garanti</span>
+</div>
+<div class="flex flex-col gap-2 pt-1">
+<div class="flex justify-between items-center text-on-surface">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tarif horaire de garde (28,00 € × 10h)</span>
+<span class="font-body-md text-body-md font-medium">280,00 €</span>
+</div>
+<div class="flex justify-between items-center text-on-surface">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+          Majoration Nuit/WE légale (+15%)
+          <span class="material-symbols-outlined text-[14px] text-on-surface-variant cursor-pointer">info</span>
+</span>
+<span class="font-body-md text-body-md font-medium">42,00 €</span>
+</div>
+<div class="flex justify-between items-center text-on-surface">
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+          Frais plateforme &amp; RC Pro Allianz
+          <span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</span>
+<span class="font-body-md text-body-md font-medium">18,00 €</span>
+</div>
+<div class="my-1 h-px bg-surface-container-highest"></div>
+<div class="flex justify-between items-center text-on-surface-variant font-body-sm text-body-sm">
+<span>Sous-total Hors Taxes</span>
+<span class="font-medium text-on-surface">340,00 €</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant font-body-sm text-body-sm">
+<span>TVA applicable (20.0%)</span>
+<span class="font-medium text-on-surface">68,00 €</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-high flex justify-between items-center mt-1">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant block">Total Prestation TTC</span>
+<span class="font-headline-md text-headline-md font-bold text-on-surface">408,00 €</span>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container-lowest text-on-surface text-label-sm font-label-sm shadow-sm font-medium">Facturation B2B</span>
+</div>
+</div>
+</div>
+<!-- Settlement Modality Choice -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Modalité de Paiement</span>
+<span class="text-label-sm font-label-sm text-on-secondary-container">Protégé par séquestre</span>
+</div>
+<div class="grid grid-cols-1 gap-2.5" id="deposit-selector">
+<!-- Option 1: Acompte (Selected by default) -->
+<div class="payment-option cursor-pointer rounded-xl p-space-md bg-surface-container-lowest shadow-md flex items-center justify-between transition-all" data-amount="122,40 €" data-mode="deposit">
+<div class="flex items-start gap-space-sm">
+<div class="radio-indicator w-5 h-5 rounded-full bg-primary flex items-center justify-center text-on-primary mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[13px] font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">Acompte 30%</span>
+<span class="px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Recommandé</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">122,40 € débités ce jour. Solde (285,60 €) prélevé à la validation du rapport de mission.</p>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface shrink-0 ml-2">122,40 €</span>
+</div>
+<!-- Option 2: Paiement Total sous séquestre -->
+<div class="payment-option cursor-pointer rounded-xl p-space-md bg-surface-container-low shadow-sm flex items-center justify-between transition-all" data-amount="408,00 €" data-mode="full">
+<div class="flex items-start gap-space-sm">
+<div class="radio-indicator w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center text-transparent mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[13px] font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Paiement Intégral Sécurisé</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">408,00 € bloqués sur compte séquestre certifié jusqu'à l'émargement final.</p>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface shrink-0 ml-2">408,00 €</span>
+</div>
+</div>
+</div>
+<!-- Payment Method Selector -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant px-space-xs">Moyen de Règlement</span>
+<div class="flex flex-col gap-2" id="method-selector">
+<!-- Method 1: Credit Card -->
+<div class="method-option cursor-pointer rounded-xl p-space-md bg-surface-container-lowest shadow-sm flex items-center justify-between" data-method="card">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[22px]">credit_card</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md font-bold text-on-surface">Corporate Visa •••• 4242</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Exp 09/27</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>Authentification 3D-Secure active</span>
+</div>
+</div>
+</div>
+<div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[10px]">check</span>
+</div>
+</div>
+<!-- Method 2: Apple Pay / Google Pay -->
+<div class="method-option cursor-pointer rounded-xl p-space-md bg-surface-container flex items-center justify-between opacity-85 hover:opacity-100 transition-opacity" data-method="wallet">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[22px]">contactless</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Apple Pay / Google Wallet</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Validation biométrique instantanée</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Method 3: SEPA B2B / Chorus Pro -->
+<div class="method-option cursor-pointer rounded-xl p-space-md bg-surface-container flex items-center justify-between opacity-85 hover:opacity-100 transition-opacity" data-method="b2b">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[22px]">account_balance</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Virement B2B différé (30j)</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">Chorus Pro</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Avec bon de commande administratif</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Reassurance & Compliance Badges -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col gap-2.5">
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Garantie Séquestre SecuGuard</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Vos fonds sont protégés et ne sont transmis à l'agent qu'après émargement de la main courante numérique.</span>
+</div>
+</div>
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Couverture RC Pro Allianz Corporate</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Police n° AZ-8849-01 souscrite à hauteur de 10 000 000 € par sinistre.</span>
+</div>
+</div>
+</div>
+<!-- Primary Sticky Action Card -->
+<div class="flex flex-col gap-2 pt-space-xs">
+<button class="w-full py-4 px-space-lg rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm font-bold flex items-center justify-center gap-space-sm shadow-lg active:scale-[0.99] transition-transform" id="cta-button">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+<span id="cta-text">Confirmer et Payer 122,40 €</span>
+</button>
+<div class="flex items-center justify-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span class="font-label-sm text-label-sm">Protocole de chiffrement bancaire TLS / SSL 256 bits</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const depositOptions = document.querySelectorAll('.payment-option');
+    const ctaText = document.getElementById('cta-text');
+
+    depositOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        // Toggle selection appearance
+        depositOptions.forEach(o => {
+          o.classList.remove('bg-surface-container-lowest', 'shadow-md');
+          o.classList.add('bg-surface-container-low', 'shadow-sm');
+          const radio = o.querySelector('.radio-indicator');
+          radio.classList.remove('bg-primary', 'text-on-primary');
+          radio.classList.add('bg-surface-container-highest', 'text-transparent');
+        });
+
+        opt.classList.remove('bg-surface-container-low', 'shadow-sm');
+        opt.classList.add('bg-surface-container-lowest', 'shadow-md');
+        const activeRadio = opt.querySelector('.radio-indicator');
+        activeRadio.classList.remove('bg-surface-container-highest', 'text-transparent');
+        activeRadio.classList.add('bg-primary', 'text-on-primary');
+
+        const amount = opt.getAttribute('data-amount');
+        ctaText.textContent = `Confirmer et Payer ${amount}`;
+      });
+    });
+
+    const methodOptions = document.querySelectorAll('.method-option');
+    methodOptions.forEach(m => {
+      m.addEventListener('click', () => {
+        methodOptions.forEach(item => {
+          item.classList.remove('bg-surface-container-lowest', 'shadow-sm');
+          item.classList.add('bg-surface-container', 'opacity-85');
+        });
+        m.classList.remove('bg-surface-container', 'opacity-85');
+        m.classList.add('bg-surface-container-lowest', 'shadow-sm');
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/80 backdrop-blur-xl border-t border-surface-container-highest/60" data-active-classes="text-primary bg-surface-container-high"><div class="flex justify-around items-center h-20 px-space-md"><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-16 rounded-2xl text-on-surface-variant hover:text-primary transition-all" data-path="home" href="#"><span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">home</span><span class="text-label-sm font-bold">Home</span></a><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-16 rounded-2xl text-on-surface-variant hover:text-primary transition-all" data-path="search" href="#"><span class="material-symbols-outlined text-[22px]">search</span><span class="text-label-sm font-medium">Search</span></a><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-16 rounded-2xl text-on-surface-variant hover:text-primary transition-all" data-path="missions" href="#"><span class="material-symbols-outlined text-[22px]">shield</span><span class="text-label-sm font-medium">Missions</span></a><a class="flex flex-col items-center justify-center gap-space-xs w-16 h-16 rounded-2xl text-on-surface-variant hover:text-primary transition-all" data-path="profile" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-label-sm font-medium">Profile</span></a></div></nav>
+</body></html>
