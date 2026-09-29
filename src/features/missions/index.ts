@@ -8,6 +8,7 @@ export {
 } from './useAssignments';
 export {
   AGENT_ASSIGNMENTS_KEY,
+  useEnregistrerRapport,
   useMesAffectations,
   usePointerAffectation,
   useRepondreAffectation,

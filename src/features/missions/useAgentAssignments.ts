@@ -88,6 +88,39 @@ export function usePointerAffectation() {
 }
 
 /**
+ * Enregistrer le rapport d'une vacation en cours, SANS la terminer.
+ *
+ * `pointer_depart` joint déjà le rapport à la fin de vacation, et c'est le
+ * geste le plus simple. Celui-ci existe pour l'agent qui écrit pendant sa
+ * vacation, sur dix heures : sans lui, tout ce qui est saisi reste dans
+ * l'état local du téléphone et disparaît au premier verrouillage.
+ *
+ * C'est la seule écriture DIRECTE d'un écran de ce projet, et elle porte sur
+ * `report` seul — voir `missionsService.enregistrerRapport` pour le `grant` qui
+ * l'autorise et la raison pour laquelle `status` reste hors de portée.
+ */
+export function useEnregistrerRapport() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      affectationId,
+      rapport,
+    }: {
+      affectationId: string;
+      rapport: string;
+    }) => missionsService.enregistrerRapport(affectationId, rapport),
+
+    onSuccess: () => {
+      // Même périmètre que `usePointerAffectation` : la liste de l'agent
+      // affiche le rapport. Celui du client ne peut pas être rafraîchi depuis
+      // ce téléphone — il le sera à son prochain chargement.
+      void queryClient.invalidateQueries({ queryKey: AGENT_ASSIGNMENTS_KEY });
+    },
+  });
+}
+
+/**
  * Clôturer la mission, côté client.
  *
  * UN SEUL GESTE POUR DEUX STATUTS.

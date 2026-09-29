@@ -17,14 +17,27 @@ type MissionAssignmentWithMission = {
   report: string | null;
   created_at: string;
   updated_at: string;
+  /*
+   * COLONNES AJOUTÉES LE 2026-09-29 : `description` et `special_requirements`.
+   *
+   * L'écran d'exécution de mission les affiche, et il ne pouvait pas les lire :
+   * la sélection ne les demandait pas. Ce n'est pas un droit manquant — AUCUNE
+   * migration n'est nécessaire. `grant select` sur `missions` est accordé AU
+   * NIVEAU TABLE, et la ligne s'ouvre par `private.can_view_mission`, qui
+   * ouvre la mission à l'agent affecté dès le statut `pending`. Un agent qui lit
+   * `title` peut donc lire les consignes du site : la RLS filtre des LIGNES,
+   * pas des colonnes.
+   */
   missions: {
     id: string;
     client_id: string;
     title: string;
+    description: string | null;
     address: string;
     city: string;
     start_time: string;
     end_time: string;
+    special_requirements: string | null;
     status:
       | 'draft'
       | 'published'
@@ -232,10 +245,12 @@ export const missionsService = {
           id,
           client_id,
           title,
+          description,
           address,
           city,
           start_time,
           end_time,
+          special_requirements,
           status
         )
       `)
@@ -273,10 +288,12 @@ export const missionsService = {
           id,
           client_id,
           title,
+          description,
           address,
           city,
           start_time,
           end_time,
+          special_requirements,
           status
         )
       `)
@@ -397,6 +414,39 @@ export const missionsService = {
       target_assignment_id: assignmentId,
       p_rapport: rapport ?? null,
     });
+
+    if (error) throw error;
+  },
+
+  /**
+   * Enregistrer le rapport SANS quitter la vacation.
+   *
+   * ÉCRITURE DIRECTE, ET C'EST LÉGITIME ICI — CONTRAIREMENT AUX STATUTS.
+   *
+   * `report` fait partie des colonnes accordées :
+   *
+   *   grant update (check_in_time, check_in_location_lat,
+   *                 check_in_location_lng, check_out_time,
+   *                 check_out_location_lat, check_out_location_lng, report)
+   *
+   * et la politique « Assigned agents can update mission reports » n'ouvre la
+   * ligne qu'à l'agent affecté. Le contrôle 23 mesure ce droit depuis le
+   * 2026-09-28. Ce n'est donc pas une écriture par la porte de derrière : c'est
+   * un droit prévu, et le contrôle 23 en exclut explicitement `status`.
+   *
+   * LE RAPPORT EST NORMALISÉ COMME DANS `pointer_depart` : une chaîne de
+   * spaces devient `NULL`. Un rapport vide n'est pas un rapport, et il ne doit
+   * pas laisser croire qu'un agent a déposé quelque chose.
+   *
+   * ⚠️ NE PAS AJOUTER `.select()` — même raison que `createAssignment` et
+   * `createMission` : la relecture de la ligne par la politique de SELECT
+   * déguise un refus en 403, et rien n'a besoin de la valeur renvoyée.
+   */
+  async enregistrerRapport(assignmentId: string, rapport: string): Promise<void> {
+    const { error } = await supabase
+      .from('mission_assignments')
+      .update({ report: rapport.trim() === '' ? null : rapport.trim() })
+      .eq('id', assignmentId);
 
     if (error) throw error;
   },
