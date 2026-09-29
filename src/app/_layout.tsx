@@ -1,14 +1,10 @@
 import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
+  HankenGrotesk_600SemiBold,
+  HankenGrotesk_700Bold,
+} from '@expo-google-fonts/hanken-grotesk';
 import {
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -26,19 +22,17 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   /*
-   * Les polices ne sont chargées qu'une fois sur les cinq graisses réellement
-   * utilisées par les primitives. Charger les 14 graisses de Plus Jakarta Sans
-   * ferait gagner quelques Ko pour des usages qui n'existent pas.
+   * Cinq graisses au total, soit exactement les cinq désignées par
+   * `FONT_FAMILIES` : Hanken Grotesk 600 et 700 pour les titres et libellés,
+   * Plus Jakarta Sans 400 et 500 pour le texte courant. Le nombre est stable :
+   * chaque clé doit correspondre à une entrée de `FONT_FAMILIES`, sinon un
+   * écran afficherait la fonte système.
    */
   const [fontsLoaded] = useFonts({
-    Manrope_400Regular,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    HankenGrotesk_600SemiBold,
+    HankenGrotesk_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
   });
 
   useEffect(() => {

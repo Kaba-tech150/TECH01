@@ -47,6 +47,19 @@ export default function AgentLayout() {
             ),
           }}
         />
+        {/*
+         * `href: null` RETIRE LA ROUTE DE LA BARRE D'ONGLETS.
+         *
+         * Même règle que dans l'espace client, et même conséquence si elle
+         * manque : l'exécution d'une mission est un écran d'action, atteint
+         * depuis l'accueil ou la liste, jamais une destination d'onglet. Sans
+         * cette ligne, l'agent verrait un onglet « Mission en cours » qui vide
+         * l'écran, faute de paramètre `id`.
+         */}
+        <Tabs.Screen
+          name="mission/[id]"
+          options={{ href: null, title: 'Mission en cours' }}
+        />
       </Tabs>
     </ProtectedRoute>
   );

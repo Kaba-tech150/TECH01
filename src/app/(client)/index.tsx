@@ -1,63 +1,128 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '@/components/common';
-import { Button, Card, SectionHeader, Typography } from '@/components/ui';
-import { BORDER_RADIUS, COLORS, FONT_FAMILIES, FONT_SIZES, SPACING } from '@/constants';
-import { MissionCard, useClientMissions } from '@/features/missions';
-import { useVilles } from '@/features/villes';
+import {
+  ActionTile,
+  Badge,
+  Button,
+  Card,
+  CatalogueRow,
+  Puce,
+  SectionHeader,
+  Typography,
+} from '@/components/ui';
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_FAMILIES,
+  FONT_SIZES,
+  HAIRLINE,
+  MISSION_STATUS_LABELS,
+  SCREEN_PADDING,
+  SHADOWS,
+  SPACING,
+} from '@/constants';
+import { useAuthContext } from '@/context/AuthContext';
+import { useClientMissions } from '@/features/missions';
+import { formatDate, formatRelativeTime } from '@/lib/utils';
+import type { Mission } from '@/types';
 
 /**
- * Prestations proposées.
+ * Accueil du client — reconstruction de `design/secuguard_accueil_client.html`.
  *
- * Ce bloc est du contenu éditorial : il décrit l'offre et ne revendique aucun
- * chiffre. C'est ce qui le distingue des statistiques, qui sont calculées.
+ * LA MAQUETTE FIXE LA FORME, PAS LE CONTENU.
+ *
+ * L'original est un tableau de bord de « SOC lead » : flux vidéo, caméra
+ * CAM-04, badge NFC lu, agent en poste, journal horodaté. L'application est une
+ * place de marché : elle n'a ni caméra, ni télémétrie, ni pointage NFC en base.
+ *
+ * Chaque bloc est donc reconstruit sur ce que la base sait RÉELLEMENT dire.
+ * Là où la maquette affiche une donnée inexistante chez nous, elle est
+ * remplacée par son équivalent vérifiable, ou retirée. Aucun chiffre n'est
+ * inventé pour « remplir » le design : afficher « 4 périmètres sous
+ * surveillance » sur une base vide est exactement le défaut que ce projet a
+ * déjà corrigé une fois sur cet écran.
  */
-const PRESTATIONS = [
+
+/**
+ * Typologies de prestations.
+ *
+ * Contenu ÉDITORIAL : ces quatre lignes décrivent l'offre et ne revendiquent
+ * aucun chiffre. Elles ne sont pas lues en base et ne doivent pas l'être : un
+ * catalogue tarifé est une décision métier, pas une constante de rendu.
+ */
+const PRESTATIONS: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  title: string;
+  description: string;
+}[] = [
   {
-    icon: 'office-building-outline' as const,
-    title: 'Surveillance de site',
-    description: "Gardiens d'immeubles, commisseries et rondes de nuit",
+    icon: 'shield-outline',
+    title: 'Gardiennage & filtrage',
+    description: "Contrôle d'accès, rondes de fermeture",
   },
   {
-    icon: 'calendar-star' as const,
-    title: 'Événementiel',
-    description: 'Filtrage, palpation, gestion des foules et de la voie',
+    icon: 'fire-extinguisher',
+    title: 'Sécurité incendie SSIAP',
+    description: 'IGH / ERP, maintenance extincteurs',
   },
   {
-    icon: 'shield-account' as const,
-    title: 'Protection VIP',
-    description: 'Chaîne de sécurité, escorte et suivi rapproché',
+    icon: 'dog-side',
+    title: 'Maitre-chien / cynophile',
+    description: 'Dissuasion périmétrique, grands espaces',
   },
   {
-    icon: 'fire-truck' as const,
-    title: 'Agents SSIAP',
-    description: 'Sapeurs-pompiers gradués pour les sites sensibles',
+    icon: 'shield-account-outline',
+    title: 'Protection rapprochée',
+    description: 'Escorte de personnalités, frameworks',
   },
 ];
 
 export default function ClientIndex() {
   const router = useRouter();
+  const { profile } = useAuthContext();
   const { data: missions, isPending } = useClientMissions();
-  const {
-    data: villes,
-    isPending: villesEnCours,
-    isError: villesEnErreur,
-  } = useVilles();
 
   /*
-   * Tous les compteurs de cet écran sont dérivés de la liste réellement
-   * chargée. Aucun n'est codé en dur : une statistique figée affichant « 142 »
-   * alors que la base est vide est le meilleur moyen de faire croire à un
-   * backend fonctionnel qui ne l'est pas.
+   * MISSION LA PLUS AVANCÉE.
+   *
+   * La maquette affiche « Surveillance en cours » avec un agent en poste. Nous
+   * n'avons ni agent affecté ni télémétrie : nous avons des missions et un
+   * statut. On montre donc la mission la plus avancée, avec son statut réel.
+   *
+   * L'ordre de priorité suit le cycle de vie de `mission_status` et non
+   * l'ordre alphabétique : `in_progress` avant `accepted` avant `published`.
+   * Une mission en cours est plus instructive qu'une autre en attente.
+   */
+  const missionCourante: Mission | undefined = (() => {
+    if (!missions) return undefined;
+    return (
+      missions.find((m) => m.status === 'in_progress') ??
+      missions.find((m) => m.status === 'accepted') ??
+      missions.find((m) => m.status === 'published')
+    );
+  })();
+
+  /*
+   * Tous les compteurs sont DÉRIVÉS de la liste réellement chargée. Aucun n'est
+   * codé en dur : une statistique figée affichant « 142 » sur une base vide est
+   * le meilleur moyen de faire croire à un backend fonctionnel qui ne l'est pas.
    */
   const total = missions?.length ?? 0;
-  const enCours =
-    missions?.filter(
-      (mission) => mission.status !== 'draft' && mission.status !== 'cancelled',
-    ).length ?? 0;
-  const brouillons = missions?.filter((mission) => mission.status === 'draft').length ?? 0;
-  const recentes = missions?.slice(0, 2) ?? [];
+  const enCours = missions?.filter((m) => m.status === 'in_progress').length ?? 0;
+  const brouillons = missions?.filter((m) => m.status === 'draft').length ?? 0;
+  const recentes = missions?.slice(0, 3) ?? [];
+
+  /*
+   * PRÉNOM DE ACCUEIL.
+   *
+   * `full_name` est la seule donnée d'affichage dont nous disposons, et elle
+   * est facultative. On affiche donc « Bonjour » seul quand elle manque, plutôt
+   * que « Bonjour  » avec une espace orpheline, ou « Bonjour Inconnu ».
+   */
+  const prenom = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
+  const salut = prenom ? `Bonjour ${prenom}` : 'Bonjour';
 
   return (
     <View style={styles.root}>
@@ -68,177 +133,304 @@ export default function ClientIndex() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Télémétrie — données réelles */}
-        <View style={styles.ticker}>
-          <View style={styles.tickerDot} />
-          <Text style={styles.tickerText}>
-            {isPending
-              ? 'Chargement de vos opérations'
-              : total === 0
-                ? 'Aucune mission enregistrée'
-                : `${total} mission${total > 1 ? 's' : ''} · ${enCours} en cours`}
-          </Text>
+        {/*
+         * BANDEAU D'IDENTITÉ : pastilles + salutation.
+         *
+         * La maquette écrit « CNAPS #75-9832 ». Ce numéro d'agrément n'existe
+         * nulle part dans la base : l'afficher serait inventer une donnée. Il est
+         * remplacé par le nombre RÉEL de missions du client.
+         */}
+        <View style={styles.bandeau}>
+          <View style={styles.chipLigne}>
+            <Puce label="Espace donneur d’ordre" pulsante />
+            <Puce label={`${total} mission${total > 1 ? 's' : ''}`} variant="neutral" />
+          </View>
+
+          <View style={styles.salutationLigne}>
+            <View style={styles.salutationTexte}>
+              <Text style={styles.salutation}>{salut}</Text>
+              <Text style={styles.sousSalutation} numberOfLines={2}>
+                {isPending
+                  ? 'Chargement de vos opérations'
+                  : total === 0
+                    ? 'Aucune mission enregistrée'
+                    : `${enCours} en cours · ${brouillons} brouillon${brouillons > 1 ? 's' : ''}`}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => router.push('/(client)/profile')}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir mon profil"
+              style={({ pressed }) => [styles.boutonAvatar, pressed && styles.presse]}
+            >
+              <MaterialCommunityIcons name="shield" size={20} color={COLORS.primary} />
+            </Pressable>
+          </View>
         </View>
 
-        {/* Bloc d'appel à l'action */}
-        <Card variant="elevated" accent style={styles.hero}>
-          <View style={styles.heroHeader}>
-            <View style={styles.heroCopy}>
-              <View style={styles.chip}>
-                <MaterialCommunityIcons
-                  name="shield-account"
-                  size={13}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.chipText}>Donneurs d&apos;ordre &amp; VIP</Text>
+        {/*
+         * BLOC NAVY — écrit à la main, et non via `Card`.
+         *
+         * La maquette pose ce bloc sur `bg-primary-container`. `Card` ne propose
+         * aucune surface navy, et lui ajouter une cinquième variante pour un
+         * seul écran serait disproportionné.
+         */}
+        <View style={styles.navy}>
+          <View style={styles.navyHaut}>
+            <View style={styles.navyCopie}>
+              <View style={styles.navyPipLigne}>
+                <View style={styles.navyPip} />
+                <Text style={styles.navySurTitre}>Déploiement rapide</Text>
               </View>
-              <Typography variant="h3" style={styles.heroTitle}>
-                Besoin d&apos;un agent de sécurité ?
-              </Typography>
-              <Typography variant="caption" style={styles.heroBody}>
-                Surveillance continue, filtrage d&apos;accès événementiel ou
-                protection rapprochée immédiate.
-              </Typography>
+
+              <Text style={styles.navyTitre}>Mission Express</Text>
+              <Text style={styles.navyCorps} numberOfLines={3}>
+                Publiez votre besoin, recevez des propositions de prestataires
+                certifiés.
+              </Text>
             </View>
-            <View style={styles.heroIcon}>
-              <MaterialCommunityIcons name="shield" size={22} color={COLORS.primary} />
+
+            <View style={styles.navyIcone}>
+              <MaterialCommunityIcons
+                name="lightning-bolt"
+                size={28}
+                color={COLORS.secondaryContainer}
+              />
             </View>
           </View>
 
-          <View style={styles.heroActions}>
+          <View style={styles.navyActions}>
             <Button
-              title="Commander"
-              icon="lightning-bolt"
+              title="Créer une mission"
+              icon="plus"
+              variant="secondary"
               onPress={() => router.push('/(client)/mission/new')}
-              style={styles.heroButton}
+              style={styles.navyBouton}
             />
-            <Button
+            <Pressable
+              onPress={() => router.push('/(client)/missions')}
+              accessibilityRole="button"
+              accessibilityLabel="Voir mes missions"
+              style={({ pressed }) => [styles.navyIconeBouton, pressed && styles.presse]}
+            >
+              <MaterialCommunityIcons
+                name="clipboard-text-outline"
+                size={20}
+                color={COLORS.onWhite}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* =================================================
+            MISSION EN COURS
+            ================================================= */}
+
+        <View style={styles.section}>
+          <SectionHeader
+            title="Mission en cours"
+            trailing={missionCourante ? 'En direct' : undefined}
+          />
+
+          {missionCourante ? (
+            <Card
+              variant="secondary"
+              style={styles.carteMission}
+              onPress={() =>
+                router.push({
+                  pathname: '/(client)/mission/[id]',
+                  params: { id: missionCourante.id },
+                })
+              }
+              accessibilityLabel={`Suivre la mission ${missionCourante.title}`}
+            >
+              <View style={styles.missionHaut}>
+                <Text style={styles.missionTitre} numberOfLines={2}>
+                  {missionCourante.title}
+                </Text>
+                <Badge
+                  text={MISSION_STATUS_LABELS[missionCourante.status]}
+                  variant="primary"
+                />
+              </View>
+
+              <View style={styles.missionMeta}>
+                <MaterialCommunityIcons
+                  name="map-marker-outline"
+                  size={14}
+                  color={COLORS.textLight}
+                />
+                <Text style={styles.missionMetaTexte} numberOfLines={1}>
+                  {missionCourante.address}, {missionCourante.city}
+                </Text>
+              </View>
+
+              <View style={styles.missionMeta}>
+                <MaterialCommunityIcons
+                  name="clock-outline"
+                  size={14}
+                  color={COLORS.textLight}
+                />
+                <Text style={styles.missionMetaTexte} numberOfLines={1}>
+                  Début {formatDate(missionCourante.start_time, 'short')} ·{' '}
+                  {missionCourante.agent_count} agent
+                  {missionCourante.agent_count > 1 ? 's' : ''} demandé
+                  {missionCourante.agent_count > 1 ? 's' : ''}
+                </Text>
+              </View>
+
+              {/* Budget affiché seulement s'il est renseigné. */}
+              {missionCourante.budget !== null &&
+              missionCourante.budget !== undefined ? (
+                <View style={styles.missionMeta}>
+                  <MaterialCommunityIcons
+                    name="cash-multiple"
+                    size={14}
+                    color={COLORS.textLight}
+                  />
+                  <Text style={styles.missionMetaTexte}>
+                    Budget {missionCourante.budget} €
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+          ) : (
+            /*
+             * ÉTAT VIDE EXPLICITE, et non un bloc masqué : le retirer ferait
+             * disparaître le seul rappel qu'une mission est possible ici.
+             */
+            <Card variant="secondary" style={styles.carteVide}>
+              <Typography variant="h3">Aucune mission en cours</Typography>
+              <Typography
+                variant="caption"
+                color={COLORS.textSecondary}
+                style={styles.carteVideTexte}
+              >
+                {isPending
+                  ? 'Lecture de vos opérations en cours…'
+                  : 'Créez une mission pour recevoir des propositions de prestataires certifiés.'}
+              </Typography>
+              <Button
+                title="Créer une mission"
+                icon="plus"
+                onPress={() => router.push('/(client)/mission/new')}
+                style={styles.carteVideBouton}
+              />
+            </Card>
+          )}
+        </View>
+        {/* =================================================
+            ACTIONS RAPIDES
+            ================================================= */}
+
+        <View style={styles.section}>
+          <SectionHeader title="Actions rapides" />
+
+          <View style={styles.grille}>
+            <ActionTile
+              title="Commander un agent"
+              subtitle="Publier un besoin"
+              icon="account-plus-outline"
+              iconVariant="secondary"
+              onPress={() => router.push('/(client)/mission/new')}
+            />
+            <ActionTile
+              title="Annuaire"
+              subtitle="Prestataires certifiés"
+              icon="badge-account-outline"
+              onPress={() => router.push('/(client)/search')}
+            />
+            <ActionTile
               title="Mes missions"
-              variant="outline"
+              subtitle={`${total} enregistrée${total > 1 ? 's' : ''}`}
               icon="clipboard-text-outline"
               onPress={() => router.push('/(client)/missions')}
-              style={styles.heroButton}
+            />
+            <ActionTile
+              title="Mon profil"
+              subtitle="Identité & accès"
+              icon="account-outline"
+              iconVariant="accent"
+              onPress={() => router.push('/(client)/profile')}
             />
           </View>
-
-          <View style={styles.heroFooter}>
-            <MaterialCommunityIcons
-              name="shield-check"
-              size={14}
-              color={COLORS.textSecondary}
-            />
-            <Text style={styles.heroFooterText}>
-              Déploiement dès 45 min avec contrôle d&apos;agrément CNAPS
-            </Text>
-          </View>
-        </Card>
-
-
-        {/* Couverture — réelle, alimentée par le référentiel des villes */}
-        <Card style={styles.coverage}>
-          <View style={styles.coverageRow}>
-            <View style={styles.coverageIcon}>
-              <MaterialCommunityIcons name="map-marker-radius" size={20} color={COLORS.primary} />
-            </View>
-            <View style={styles.coverageCopy}>
-              <Typography variant="label" style={styles.coverageTitle}>
-                Couverture opérationnelle
-              </Typography>
-              {/*
-                * `isPending` et `isError` sont distingués : sans cela, un échec
-                * de la requête afficherait « Chargement » indéfiniment, ce qui
-                * ferait croire à un réseau lent alors que la table `villes`
-                * est peut-être simplement absente.
-                */}
-              <Typography variant="caption">
-                {villesEnErreur
-                  ? 'Zones indisponibles'
-                  : villesEnCours
-                    ? 'Chargement des zones…'
-                    : `${villes?.length ?? 0} ville${villes?.length === 1 ? '' : 's'} desservie${villes?.length === 1 ? '' : 's'}`}
-              </Typography>
-            </View>
-            <Button
-              title="Choisir"
-              variant="secondary"
-              size="md"
-              onPress={() => router.push('/(client)/mission/new')}
-            />
-          </View>
-        </Card>
-
-        {/* Statistiques — réelles */}
-        <View style={styles.stats}>
-          <StatTile label="En cours" value={enCours} />
-          <StatTile label="Brouillons" value={brouillons} />
-          <StatTile label="Total" value={total} />
         </View>
 
-        {/* Prestations — éditorial, sans chiffre revendiqué */}
-        <View>
-          <SectionHeader title="Prestations qualifiées" />
-          <View style={styles.grid}>
+        {/* =================================================
+            CATALOGUE
+            ================================================= */}
+
+        <View style={styles.section}>
+          <SectionHeader title="Catalogue prestations" />
+          <Text style={styles.sectionSousTitre}>
+            Typologies de missions disponibles sur la plateforme
+          </Text>
+
+          <View style={styles.liste}>
             {PRESTATIONS.map((prestation) => (
-              <View key={prestation.title} style={styles.tile}>
-                <MaterialCommunityIcons
-                  name={prestation.icon}
-                  size={20}
-                  color={COLORS.cobalt}
-                />
-                <Text style={styles.tileTitle}>{prestation.title}</Text>
-                <Text style={styles.tileBody}>{prestation.description}</Text>
-              </View>
+              <CatalogueRow
+                key={prestation.title}
+                title={prestation.title}
+                description={prestation.description}
+                icon={prestation.icon}
+                onPress={() => router.push('/(client)/mission/new')}
+              />
             ))}
           </View>
         </View>
 
-        {/* Dernières missions — réelles */}
+        {/* =================================================
+            ACTIVITÉ RÉCENTE
+            ================================================= */}
+
         {recentes.length > 0 ? (
-          <View>
+          <View style={styles.section}>
             <SectionHeader
-              title="Dernières missions"
+              title="Activité récente"
               actionLabel="Tout voir"
               onPressAction={() => router.push('/(client)/missions')}
             />
-            {recentes.map((mission) => (
-              <MissionCard key={mission.id} mission={mission} />
-            ))}
+
+            <Card variant="default" style={styles.journal}>
+              {recentes.map((mission, index) => (
+                <View
+                  key={mission.id}
+                  style={[
+                    styles.journalLigne,
+                    /*
+                     * Filet entre les lignes, jamais sous la dernière : sinon la
+                     * carte se termine sur un trait qui ne sépare rien.
+                     */
+                    index < recentes.length - 1 && styles.journalSeparateur,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="clipboard-check-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <View style={styles.journalTexte}>
+                    <Text style={styles.journalTitre} numberOfLines={1}>
+                      {mission.title}
+                    </Text>
+                    <Text style={styles.journalDate} numberOfLines={1}>
+                      {formatRelativeTime(mission.created_at)} · {mission.city}
+                    </Text>
+                  </View>
+                  <Badge text={MISSION_STATUS_LABELS[mission.status]} variant="neutral" />
+                </View>
+              ))}
+            </Card>
           </View>
         ) : null}
-
-        {/* Appel final */}
-        <Card style={styles.cta}>
-          <View style={styles.ctaIcon}>
-            <MaterialCommunityIcons name="shield" size={24} color={COLORS.primary} />
-          </View>
-          <Typography variant="h3" style={styles.ctaTitle}>
-            Sécurisez vos opérations en 3 clics
-          </Typography>
-          <Typography variant="caption" style={styles.ctaBody}>
-            Demande chiffrée, affectation d&apos;agents vérifiés, paiement
-            sécurisé.
-          </Typography>
-          <Button
-            title="Lancer une mission"
-            icon="lightning-bolt"
-            onPress={() => router.push('/(client)/mission/new')}
-          />
-        </Card>
       </ScrollView>
     </View>
   );
 }
-
-/** Tuile de statistique : la valeur est un nombre, jamais une chaîne libre. */
-function StatTile({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={styles.statTile}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
+/* =========================================================
+   STYLES
+   ========================================================= */
 
 const styles = StyleSheet.create({
   root: {
@@ -249,196 +441,237 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: SPACING.lg,
+    // `SCREEN_PADDING` = 24, soit le `px-gutter` de 1.5rem de la maquette.
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.xxxl,
-    gap: SPACING.lg,
+    gap: SPACING.xl,
   },
 
-  ticker: {
+  /* --- Bandeau d'identite --- */
+
+  bandeau: {
+    gap: SPACING.sm,
+  },
+  chipLigne: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  tickerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.cyan,
-  },
-  tickerText: {
-    fontFamily: FONT_FAMILIES.semibold,
-    fontSize: FONT_SIZES.xs,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: COLORS.textSecondary,
-  },
-
-  hero: {
-    backgroundColor: COLORS.surfaceContainer,
+  salutationLigne: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.md,
   },
-  heroHeader: {
+  salutationTexte: {
+    flex: 1,
+    minWidth: 0,
+  },
+  salutation: {
+    fontFamily: FONT_FAMILIES.display,
+    // `headline-md` de la maquette : 24px, interlettrage -0.01em.
+    fontSize: FONT_SIZES.xxxl,
+    lineHeight: 32,
+    letterSpacing: -0.24,
+    color: COLORS.text,
+  },
+  sousSalutation: {
+    marginTop: 2,
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 14,
+    color: COLORS.textSecondary,
+  },
+  boutonAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presse: {
+    opacity: 0.7,
+  },
+
+  /* --- Bloc navy --- */
+
+  navy: {
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.primaryContainer,
+    padding: SPACING.lg,
+    gap: SPACING.lg,
+    ...SHADOWS.raised,
+  },
+  navyHaut: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: SPACING.md,
   },
-  heroCopy: {
+  navyCopie: {
     flex: 1,
+    minWidth: 0,
   },
-  chip: {
+  navyPipLigne: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 3,
-    borderRadius: BORDER_RADIUS.sm,
-    marginBottom: SPACING.sm,
+    gap: 6,
+    marginBottom: SPACING.xs,
   },
-  chipText: {
+  navyPip: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.accent,
+  },
+  navySurTitre: {
     fontFamily: FONT_FAMILIES.semibold,
     fontSize: FONT_SIZES.xs,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: COLORS.primary,
+    color: COLORS.secondaryContainer,
   },
-  heroTitle: {
-    marginBottom: SPACING.xs,
+  navyTitre: {
+    fontFamily: FONT_FAMILIES.display,
+    fontSize: FONT_SIZES.xl,
+    lineHeight: 24,
+    color: COLORS.onWhite,
   },
-  heroBody: {
-    lineHeight: 19,
+  navyCorps: {
+    marginTop: 2,
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 18,
+    color: COLORS.onPrimaryContainer,
   },
-  heroIcon: {
-    width: 40,
-    height: 40,
+  navyIcone: {
+    width: 48,
+    height: 48,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    /*
+     * Voile blanc a 10% : la maquette ecrit `bg-surface-container-lowest/10`.
+     * `rgba` est le seul moyen d'exprimer une opacite sur un aplat sans
+     * inventer une huitieme teinte de surface dans les tokens.
+     */
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroActions: {
+  navyActions: {
     flexDirection: 'row',
     gap: SPACING.sm,
   },
-  heroButton: {
+  navyBouton: {
     flex: 1,
   },
-  heroFooter: {
-    flexDirection: 'row',
+  navyIconeBouton: {
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
-    gap: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
+    justifyContent: 'center',
   },
-  heroFooterText: {
-    flex: 1,
+
+  /* --- Sections --- */
+
+  section: {
+    gap: SPACING.md,
+  },
+  sectionSousTitre: {
+    // Remonte le sous-titre sous l'en-tete de section, qui porte deja sa marge.
+    marginTop: -SPACING.xs,
     fontFamily: FONT_FAMILIES.regular,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 14,
     color: COLORS.textSecondary,
   },
 
-  coverage: {
-    paddingVertical: SPACING.md,
+  /* --- Mission en cours --- */
+
+  carteMission: {
+    gap: SPACING.sm,
   },
-  coverageRow: {
+  missionHaut: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  missionTitre: {
+    flex: 1,
+    fontFamily: FONT_FAMILIES.displaySemibold,
+    fontSize: FONT_SIZES.lg,
+    lineHeight: 22,
+    color: COLORS.text,
+  },
+  missionMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  missionMetaTexte: {
+    flex: 1,
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 16,
+    color: COLORS.textSecondary,
+  },
+  carteVide: {
+    gap: SPACING.sm,
+  },
+  carteVideTexte: {
+    marginBottom: SPACING.sm,
+  },
+  carteVideBouton: {
+    alignSelf: 'flex-start',
+  },
+
+  /* --- Grille d'actions --- */
+
+  grille: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.md,
+  },
+
+  /* --- Catalogue --- */
+
+  liste: {
+    gap: SPACING.sm,
+  },
+
+  /* --- Activite recente --- */
+
+  journal: {
+    padding: SPACING.md,
+    gap: 0,
+  },
+  journalLigne: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-  },
-  coverageIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coverageCopy: {
-    flex: 1,
-  },
-  coverageTitle: {
-    marginBottom: 2,
-  },
-
-  stats: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  statTile: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: BORDER_RADIUS.md,
     paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xs,
-    alignItems: 'center',
   },
-  statValue: {
-    fontFamily: FONT_FAMILIES.display,
-    fontSize: FONT_SIZES.xxxl,
-    color: COLORS.text,
+  journalSeparateur: {
+    borderBottomWidth: 1,
+    borderBottomColor: HAIRLINE,
   },
-  statLabel: {
-    fontFamily: FONT_FAMILIES.medium,
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 2,
+  journalTexte: {
+    flex: 1,
+    minWidth: 0,
   },
-
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  tile: {
-    /*
-     * `48%` + `flexGrow: 1` plutôt que `flex: 1` : deux colonnes de largeurs
-     * égales avec un espace constant. `flex: 1` rognerait inutilement la
-     * couleur de fond de chaque tuile.
-     */
-    width: '48%',
-    flexGrow: 1,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.14)',
-    padding: SPACING.md,
-    gap: SPACING.xs,
-  },
-  tileTitle: {
-    fontFamily: FONT_FAMILIES.displaySemibold,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.text,
-  },
-  tileBody: {
-    fontFamily: FONT_FAMILIES.regular,
+  journalTitre: {
+    fontFamily: FONT_FAMILIES.semibold,
     fontSize: FONT_SIZES.sm,
-    lineHeight: 17,
+    lineHeight: 18,
+    color: COLORS.text,
+  },
+  journalDate: {
+    fontFamily: FONT_FAMILIES.regular,
+    fontSize: FONT_SIZES.xs,
+    lineHeight: 14,
     color: COLORS.textSecondary,
-  },
-
-  cta: {
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
-    gap: SPACING.sm,
-  },
-  ctaIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.xs,
-  },
-  ctaTitle: {
-    textAlign: 'center',
-  },
-  ctaBody: {
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
   },
 });
 

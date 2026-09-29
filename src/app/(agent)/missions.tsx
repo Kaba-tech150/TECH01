@@ -300,6 +300,29 @@ export default function AgentMissions() {
                     />
                   </>
                 ) : null}
+
+                {/*
+                 * UN BOUTON, ET NON UNE CARTE ENTIÈRE ACTIONNABLE.
+                 *
+                 * `CarteAffectation` reçoit des boutons en `children` : en faire
+                 * une carte cliquable poserait un bouton dans un bouton. Sur
+                 * native le geste interne l'emporte, sur le web les deux
+                 * déclenchent — un pointage partirait deux fois. Le lien est donc
+                 * explicite, et il mène au même écran que celui de l'accueil.
+                 */}
+                <Button
+                  title="Ouvrir la mission"
+                  icon="arrow-expand-all"
+                  variant="ghost"
+                  size="md"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(agent)/mission/[id]',
+                      params: { id: affectation.id },
+                    })
+                  }
+                  disabled={occupe}
+                />
               </CarteAffectation>
             );
           })
