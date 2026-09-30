@@ -49,8 +49,9 @@
 | **Parcours client** | ⚠️ **Codé** | **[V]** demande, recherche, publication, réservation, suivi, clôture · **[X] clôture jamais testée |
 | **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création et modification depuis l'écran, valeurs en base |
 | **Parcours agent** | ⚠️ **Codé** | **[V]** exécution de mission écrite et routée · **[X] aucun écran ouvert à ce jour |
-| Espaces société / admin | ❌ **Écrans vides** | **[V]** aucune requête de donnée |
+| Espaces société / admin | ⚠️ **1 écran sur 8 branché** | **[V]** `(company)/index.tsx` lit 4 hooks réels · **[V]** 7 autres sans aucune lecture |
 | **Routage** | ✅ **Désambiguïsé** | **[V]** 22 URL publiques, **0 doublon** · `/profile` et `/missions` n'existent plus |
+| **Écran 404** | ✅ **Créé** | **[V]** `+not-found.tsx` · **[V]** `dist/+not-found.html` généré · **[X]** non rouvert à l'écran |
 | **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet (3 valeurs sur 4 vides, constaté le 2026-09-29) · **[X]** jamais exécuté |
 
 ---
@@ -519,15 +520,16 @@ logique métier, `components` reste transverse.
 
 ## Structure des dossiers
 
-**[V]** 91 fichiers `.ts` / `.tsx`.
+**[V]** 117 fichiers `.ts` / `.tsx`, recomptés le 2026-09-30. Le chiffre
+précédent, 91, datait d'avant le lot design system.
 
 | Dossier | Fichiers | Contenu |
 |---|---|---|
-| `src/app` | 31 | écrans et layouts Expo Router, 6 groupes |
-| `src/components` | 25 | `ui` 6 · `common` 9 · `forms` 5 · `auth` 3 · `navigation` 2 |
-| `src/features` | 12 | `missions` 4 · `prestataires` 5 · `villes` 3 |
+| `src/app` | 35 | 27 écrans + 6 layouts + `+not-found` |
+| `src/components` | 32 | `ui` 13 · `common` 9 · `forms` 5 · `auth` 3 · `navigation` 2 |
+| `src/features` | 23 | `missions` 7 · `prestataires` 5 · `villes` 3 · `administration` 2 · `companies` 2 · `documents` 2 · `portefeuille` 2 |
 | `src/lib` | 11 | `supabase` 6 · `storage` 2 · `utils` 2 · `queryClient` 1 |
-| `src/services` | 5 | `missions` · `providers` · `profiles` · `villes` · `index` |
+| `src/services` | 9 | `missions` · `providers` · `profiles` · `villes` · `companies` · `administration` · `documents` · `portefeuille` · `index` |
 | `src/hooks` | 3 | `useAuth` · `useProfile` · `index` |
 | `src/context` | 2 | `AuthContext` · `index` |
 | `src/constants` | 1 | tokens centralisés |
@@ -539,14 +541,45 @@ logique métier, `components` reste transverse.
 |---|---|---|
 | `(startup)` | `onboarding`, `profile-selection` | ✅ |
 | `(auth)` | `sign-in`, `sign-up`, `role-selection` | ✅ |
-| `(client)` | `index`, `missions`, `mission/new`, `search`, `profile` | ⚠️ 4 sur 5 |
-| `(agent)` | `index`, `profile`, `missions`, `availability` | ⚠️ 1 sur 4 |
-| `(company)` | `index`, `profile`, `missions`, `team` | ❌ 0 sur 4 |
-| `(admin)` | `index`, `users`, `missions`, `profile` | ❌ 0 sur 4 |
+| `(client)` | `index`, `missions-client`, `mission/new`, `mission-suivi/[id]`, `prestation/[id]`, `search`, `profil-client` | ✅ 7 sur 7 |
+| `(agent)` | `index`, `profil-agent`, `missions-agent`, `availability`, `mission-execution/[id]` | ✅ 5 sur 5, **[X] aucun ouvert** |
+| `(company)` | `index` ✅ · `profil-societe`, `missions-societe`, `team` ❌ | ⚠️ **1 sur 4 branché** |
+| `(admin)` | `index`, `profil-admin` ⚠️ · `missions-admin`, `users` ❌ | ⚠️ **2 sur 4 branchés** |
+| racine | `index` (`StartupGate`), `welcome`, **`+not-found`** | ✅ |
 
-**Fichiers racine :** `app.json` · `tsconfig.json` · `eslint.config.js` ·
-`.env` / `.env.example` · `AGENTS.md` · `README.md` · `RAPPORT_PROJET.md` ·
-`design/` (maquette Figma) · `dist/` (export web)
+> **Noms renommés le 2026-09-30.** Les quatre groupes partageaient `profile`
+> et `missions`, et deux partageaient `mission/[id]` : onze URL publiques pour
+> huit écrans. Les fichiers portent désormais l'espace — `profil-client`,
+> `missions-agent`, `mission-suivi/[id]`, `mission-execution/[id]`. Voir
+> *Défaut 11*.
+
+> **`+not-found.tsx` n'existait pas avant le 2026-09-30.** Aucune URL erronée
+> n'affichait quoi que ce soit : un écran vide, sans explication. C'est la
+> conséquence directe du défaut 11 — corriger les routes ne corrige pas la
+> classe de problème.
+
+### Ce que la mesure corrige dans ce rapport **[V]**
+
+La version précédente de ce document affirmait « espaces société / admin :
+**écrans vides, aucune requête de donnée** ». C'est **faux**, et la phrase
+datait d'avant le commit `52d7196`, qui a construit la couche de données
+sans que le tableau soit repris.
+
+| Mesure | Valeur |
+|---|---|
+| Écrans de `src/app` important `@/features`, `@/services` ou `@/hooks` | **13 sur 27** |
+| `(company)/index.tsx` | **4 hooks** : `useMaFicheSociete`, `useMonEquipe`, `useMesAffectationsSociete`, `usePortefeuille` |
+| Écrans sans aucune lecture | `(admin)/missions-admin` · `(company)/missions-societe` · `(company)/team` · `(admin)/users` — 1 206 à 1 366 octets |
+| Services écrits **non appelés par un écran** | `administration.service.ts` (178 o) · `companies.service.ts` (171 o) · `documents.service.ts` · `portefeuille.service.ts` |
+
+La couche de données existe. **Le dernier kilomètre — l'appel depuis l'écran —
+n'est pas fait.** C'est la même distinction que « codé » et « terminé » : du
+code non exécuté n'est pas une fonctionnalité.
+
+### Fichiers racine
+
+`app.json` · `tsconfig.json` · `eslint.config.js` · `.env` / `.env.example` ·
+`AGENTS.md` · `README.md` · `RAPPORT_PROJET.md` · `design/` · `dist/` (export web)
 
 ---
 
