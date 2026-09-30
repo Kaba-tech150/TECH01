@@ -224,7 +224,7 @@ export default function ReservationScreen() {
             <Button
               title="Voir mes missions"
               variant="secondary"
-              onPress={() => router.replace('/(client)/missions')}
+              onPress={() => router.replace('/(client)/missions-client')}
             />
           </Card>
         ) : null}

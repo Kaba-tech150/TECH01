@@ -17,7 +17,7 @@ export default function ClientLayout() {
           }}
         />
         <Tabs.Screen
-          name="missions"
+          name="missions-client"
           options={{
             title: 'Missions',
             tabBarIcon: ({ color, size }) => (
@@ -35,7 +35,7 @@ export default function ClientLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="profil-client"
           options={{
             title: 'Profil',
             tabBarIcon: ({ color, size }) => (
@@ -57,7 +57,7 @@ export default function ClientLayout() {
          * et il n'avait été signalé que par un rapport.
          */}
         <Tabs.Screen name="prestation/[id]" options={{ href: null, title: 'Réservation' }} />
-        <Tabs.Screen name="mission/[id]" options={{ href: null, title: 'Suivi' }} />
+        <Tabs.Screen name="mission-suivi/[id]" options={{ href: null, title: 'Suivi' }} />
         <Tabs.Screen name="mission/new" options={{ href: null, title: 'Nouvelle mission' }} />
       </Tabs>
     </ProtectedRoute>

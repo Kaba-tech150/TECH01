@@ -17,7 +17,7 @@ export default function AgentLayout() {
           }}
         />
         <Tabs.Screen
-          name="missions"
+          name="missions-agent"
           options={{
             title: 'Missions',
             tabBarIcon: ({ color, size }) => (
@@ -39,7 +39,7 @@ export default function AgentLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="profil-agent"
           options={{
             title: 'Profil',
             tabBarIcon: ({ color, size }) => (
@@ -57,7 +57,7 @@ export default function AgentLayout() {
          * l'écran, faute de paramètre `id`.
          */}
         <Tabs.Screen
-          name="mission/[id]"
+          name="mission-execution/[id]"
           options={{ href: null, title: 'Mission en cours' }}
         />
       </Tabs>

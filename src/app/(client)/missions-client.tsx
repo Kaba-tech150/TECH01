@@ -111,7 +111,7 @@ export default function ClientMissions() {
               mission={mission}
               onPress={() =>
                 router.push({
-                  pathname: '/(client)/mission/[id]',
+                  pathname: '/(client)/mission-suivi/[id]',
                   params: { id: mission.id },
                 })
               }

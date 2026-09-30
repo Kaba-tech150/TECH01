@@ -17,7 +17,7 @@ export default function CompanyLayout() {
           }}
         />
         <Tabs.Screen
-          name="missions"
+          name="missions-societe"
           options={{
             title: 'Missions',
             tabBarIcon: ({ color, size }) => (
@@ -35,7 +35,7 @@ export default function CompanyLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="profil-societe"
           options={{
             title: 'Profil',
             tabBarIcon: ({ color, size }) => (

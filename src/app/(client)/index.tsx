@@ -126,7 +126,7 @@ export default function ClientIndex() {
 
   return (
     <View style={styles.root}>
-      <AppHeader onPressProfile={() => router.push('/(client)/profile')} />
+      <AppHeader onPressProfile={() => router.push('/(client)/profil-client')} />
 
       <ScrollView
         style={styles.scroll}
@@ -159,7 +159,7 @@ export default function ClientIndex() {
             </View>
 
             <Pressable
-              onPress={() => router.push('/(client)/profile')}
+              onPress={() => router.push('/(client)/profil-client')}
               accessibilityRole="button"
               accessibilityLabel="Ouvrir mon profil"
               style={({ pressed }) => [styles.boutonAvatar, pressed && styles.presse]}
@@ -209,7 +209,7 @@ export default function ClientIndex() {
               style={styles.navyBouton}
             />
             <Pressable
-              onPress={() => router.push('/(client)/missions')}
+              onPress={() => router.push('/(client)/missions-client')}
               accessibilityRole="button"
               accessibilityLabel="Voir mes missions"
               style={({ pressed }) => [styles.navyIconeBouton, pressed && styles.presse]}
@@ -239,7 +239,7 @@ export default function ClientIndex() {
               style={styles.carteMission}
               onPress={() =>
                 router.push({
-                  pathname: '/(client)/mission/[id]',
+                  pathname: '/(client)/mission-suivi/[id]',
                   params: { id: missionCourante.id },
                 })
               }
@@ -345,14 +345,14 @@ export default function ClientIndex() {
               title="Mes missions"
               subtitle={`${total} enregistrée${total > 1 ? 's' : ''}`}
               icon="clipboard-text-outline"
-              onPress={() => router.push('/(client)/missions')}
+              onPress={() => router.push('/(client)/missions-client')}
             />
             <ActionTile
               title="Mon profil"
               subtitle="Identité & accès"
               icon="account-outline"
               iconVariant="accent"
-              onPress={() => router.push('/(client)/profile')}
+              onPress={() => router.push('/(client)/profil-client')}
             />
           </View>
         </View>
@@ -389,7 +389,7 @@ export default function ClientIndex() {
             <SectionHeader
               title="Activité récente"
               actionLabel="Tout voir"
-              onPressAction={() => router.push('/(client)/missions')}
+              onPressAction={() => router.push('/(client)/missions-client')}
             />
 
             <Card variant="default" style={styles.journal}>

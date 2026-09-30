@@ -153,7 +153,7 @@ export default function AgentMissionEnCours() {
         <Text style={styles.texte}>
           Cette mission ne figure plus dans vos affectations.
         </Text>
-        <Button title="Voir mes missions" onPress={() => router.replace('/(agent)/missions')} />
+        <Button title="Voir mes missions" onPress={() => router.replace('/(agent)/missions-agent')} />
       </View>
     );
   }

@@ -93,7 +93,7 @@ export default function AgentAvailability() {
           </Typography>
           <Button
             title="Créer ma fiche"
-            onPress={() => router.push('/(agent)/profile')}
+            onPress={() => router.push('/(agent)/profil-agent')}
           />
         </Card>
       </ScrollView>

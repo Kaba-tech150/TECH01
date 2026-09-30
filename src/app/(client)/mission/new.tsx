@@ -86,7 +86,7 @@ export default function NewMissionScreen() {
   const onSubmit = async (valeurs: MissionFormValues) => {
     try {
       await createMission.mutateAsync(versChargeUtile(valeurs));
-      router.replace('/(client)/missions');
+      router.replace('/(client)/missions-client');
     } catch (error) {
       // L'erreur est rattachée au titre : un bandeau global placé en haut
       // d'un formulaire long est souvent hors champ, et le message passe

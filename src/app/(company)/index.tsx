@@ -77,7 +77,7 @@ export default function CompanyIndex() {
 
   return (
     <View style={styles.root}>
-      <AppHeader onPressProfile={() => router.push('/(company)/profile')} />
+      <AppHeader onPressProfile={() => router.push('/(company)/profil-societe')} />
 
       <ScrollView
         style={styles.scroll}
@@ -147,7 +147,7 @@ export default function CompanyIndex() {
           primaryAction={{
             label: 'Voir mes missions',
             icon: 'clipboard-text-outline',
-            onPress: () => router.push('/(company)/missions'),
+            onPress: () => router.push('/(company)/missions-societe'),
             accessibilityLabel: `Voir mes missions, ${total} au total`,
           }}
           secondaryAction={{
@@ -252,7 +252,7 @@ export default function CompanyIndex() {
           <SectionHeader
             title="Dernières affectations"
             actionLabel="Tout voir"
-            onPressAction={() => router.push('/(company)/missions')}
+            onPressAction={() => router.push('/(company)/missions-societe')}
           />
 
           {affectations && affectations.length > 0 ? (

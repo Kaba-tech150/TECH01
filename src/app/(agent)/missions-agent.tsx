@@ -154,7 +154,7 @@ export default function AgentMissions() {
           </Typography>
           <Button
             title="Créer ma fiche"
-            onPress={() => router.push('/(agent)/profile')}
+            onPress={() => router.push('/(agent)/profil-agent')}
           />
         </Card>
       </ScrollView>
@@ -317,7 +317,7 @@ export default function AgentMissions() {
                   size="md"
                   onPress={() =>
                     router.push({
-                      pathname: '/(agent)/mission/[id]',
+                      pathname: '/(agent)/mission-execution/[id]',
                       params: { id: affectation.id },
                     })
                   }

@@ -176,7 +176,7 @@ export default function AgentIndex() {
 
   return (
     <View style={styles.root}>
-      <AppHeader onPressProfile={() => router.push('/(agent)/profile')} />
+      <AppHeader onPressProfile={() => router.push('/(agent)/profil-agent')} />
 
       <ScrollView
         style={styles.scroll}
@@ -250,7 +250,7 @@ export default function AgentIndex() {
             <Button
               title="Renseigner ma fiche"
               icon="card-account-details-outline"
-              onPress={() => router.push('/(agent)/profile')}
+              onPress={() => router.push('/(agent)/profil-agent')}
               fullWidth={false}
             />
           </Card>
@@ -268,7 +268,7 @@ export default function AgentIndex() {
           primaryAction={{
             label: 'Voir mes demandes',
             icon: 'clipboard-text-outline',
-            onPress: () => router.push('/(agent)/missions'),
+            onPress: () => router.push('/(agent)/missions-agent'),
             accessibilityLabel: `Voir mes demandes, ${demandes.length} en attente`,
           }}
           secondaryAction={{
@@ -374,7 +374,7 @@ export default function AgentIndex() {
                 size="md"
                 onPress={() =>
                   router.push({
-                    pathname: '/(agent)/mission/[id]',
+                    pathname: '/(agent)/mission-execution/[id]',
                     params: { id: vacationEnCours.id },
                   })
                 }
@@ -412,7 +412,7 @@ export default function AgentIndex() {
             <SectionHeader
               title="Demandes à traiter"
               actionLabel="Tout voir"
-              onPressAction={() => router.push('/(agent)/missions')}
+              onPressAction={() => router.push('/(agent)/missions-agent')}
             />
 
             {demandes.map((affectation) => (
@@ -555,7 +555,7 @@ export default function AgentIndex() {
               subtitle={`${total} reçue${total > 1 ? 's' : ''}`}
               icon="clipboard-text-outline"
               iconVariant="secondary"
-              onPress={() => router.push('/(agent)/missions')}
+              onPress={() => router.push('/(agent)/missions-agent')}
             />
             <ActionTile
               title="Disponibilités"
@@ -567,7 +567,7 @@ export default function AgentIndex() {
               title="Ma fiche"
               subtitle="Zone, tarif, bio"
               icon="card-account-details-outline"
-              onPress={() => router.push('/(agent)/profile')}
+              onPress={() => router.push('/(agent)/profil-agent')}
             />
             <ActionTile
               title="Ma disponibilité"

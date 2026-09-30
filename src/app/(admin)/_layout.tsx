@@ -30,7 +30,7 @@ export default function AdminLayout() {
           }}
         />
         <Tabs.Screen
-          name="missions"
+          name="missions-admin"
           options={{
             title: 'Missions',
             tabBarIcon: ({ color, size }) => (
@@ -39,7 +39,7 @@ export default function AdminLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="profil-admin"
           options={{
             title: 'Profil',
             tabBarIcon: ({ color, size }) => (

@@ -50,7 +50,89 @@
 | **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création et modification depuis l'écran, valeurs en base |
 | **Parcours agent** | ⚠️ **Codé** | **[V]** exécution de mission écrite et routée · **[X] aucun écran ouvert à ce jour |
 | Espaces société / admin | ❌ **Écrans vides** | **[V]** aucune requête de donnée |
+| **Routage** | ✅ **Désambiguïsé** | **[V]** 22 URL publiques, **0 doublon** · `/profile` et `/missions` n'existent plus |
 | **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet (3 valeurs sur 4 vides, constaté le 2026-09-29) · **[X]** jamais exécuté |
+
+---
+
+## Défaut 11 — quatre fichiers pour une seule URL (2026-09-30)
+
+**Constaté par le commanditaire**, en ouvrant `http://localhost:8081/profile`
+et en obtenant un écran absent.
+
+### Ce que c'était
+
+En Expo Router, **un groupe entre parenthèses n'entre pas dans l'URL**. Quatre
+frais de nom suffisaient donc à produire la même adresse publique :
+
+| Fichier (avant) | URL publique | Espace |
+|---|---|---|
+| `(client)/profile.tsx` | `/profile` | client |
+| `(agent)/profile.tsx` | `/profile` | agent |
+| `(company)/profile.tsx` | `/profile` | société |
+| `(admin)/profile.tsx` | `/profile` | admin |
+
+Le même défaut existait sur `/missions` (4 fichiers) et `/mission/[id]` (2
+fichiers). **La table de routes générée déclarait `/profile` quatre fois** —
+c'est elle qui a permis de le voir, et non la lecture des écrans.
+
+À l'ouverture de `/profile`, le routeur élisait un vainqueur arbitraire. Si le
+rôle de l'utilisateur ne correspondait pas, `ProtectedRoute`
+(`src/components/auth/ProtectedRoute.tsx:93`) le redirigeait vers
+`/(auth)/role-selection` : d'où l'écran « absent ».
+
+**Ce que cela ne cassait pas :** la navigation interne. Les 12 `router.push`
+portaient tous le groupe (`/(client)/profile`), et les onglets fonctionnaient.
+**Seule la saisie manuelle d'URL, et donc le partage de lien, était en cause.**
+
+### Aucune des trois vérifications obligatoires ne l'aurait vu
+
+`tsc --noEmit` passe, et il passerait encore : `typedRoutes` valide la **forme**
+d'une chaîne, pas son **unicité**. `/(client)/profile` est une chaîne
+parfaitement valide. C'est le onzième défaut de la même famille que les dix du
+28 septembre — dans ce que la base **fait**, pas dans ce qu'elle **contient**.
+
+### Correction — option A, suffixes d'espace **[V]**
+
+Les noms de fichiers portent désormais l'espace, donc l'URL aussi. Les groupes
+sont conservés : ils portent les gardes `ProtectedRoute` et les `Tabs`.
+
+| Avant (URL) | Après (URL) |
+|---|---|
+| `/profile` (×4) | `/profil-client` · `/profil-agent` · `/profil-societe` · `/profil-admin` |
+| `/missions` (×4) | `/missions-client` · `/missions-agent` · `/missions-societe` · `/missions-admin` |
+| `/mission/[id]` (×2) | `/mission-suivi/[id]` · `/mission-execution/[id]` |
+
+**24 occurrences** de routes mises à jour dans 9 fichiers, plus **10**
+`Tabs.Screen` dans les 4 layouts. Les renommages ont été faits par `git mv` :
+git les enregistre comme renommages, pas comme suppressions.
+
+### Preuves **[V]**
+
+- `tsc --noEmit` vide · `npx eslint .` exit 0 · `check:supabase` conforme.
+- **Zéro référence résiduelle** aux anciennes routes, recherche sur `src/`.
+- **Table de routes régénérée** : 22 URL publiques, **0 doublon**. `/profile`,
+  `/missions` et `/mission/[id]` ont **disparu** de la table.
+
+### Le cache Metro a menti une fois de plus **[V]**
+
+Le premier relevé de la table de routes, après les renommages, affichait
+**encore** `/profile` et `/missions` **et** les nouveaux noms. Fichier daté de
+03:43:50, soit avant les renommages : c'était un cache périmé, pas la vérité.
+Le fichier ne se régénère qu'au démarrage du serveur de dev — le supprimer ne
+suffit pas, il faut relancer `expo start`. Après redémarrage, le fichier est
+passé de 16 009 à 12 069 octets et ne contient plus que les nouveaux noms.
+
+> C'est le même piège que celui du manifeste PWA, documenté plus bas : un vert
+> sur `typecheck` + `eslint` n'aurait jamais vu ce défaut, et un cache
+> périmé aurait pu faire croire qu'il n'était pas corrigé.
+
+### Ce qui reste à faire **[X]**
+
+**Aucun écran renommé n'a été rouvert à l'écran.** `typecheck`, `eslint` et la
+table de routes prouvent que les routes sont uniques et cohérentes — pas qu'un
+onglet affiche le bon contenu. C'est la limite que ce projet s'est donnée dès le
+premier défaut.
 
 ---
 
