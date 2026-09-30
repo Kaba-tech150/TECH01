@@ -49,7 +49,7 @@
 | **Parcours client** | ⚠️ **Codé** | **[V]** demande, recherche, publication, réservation, suivi, clôture · **[X] clôture jamais testée |
 | **Fiche agent** | ✅ **Fonctionnelle** | **[V]** création et modification depuis l'écran, valeurs en base |
 | **Parcours agent** | ⚠️ **Codé** | **[V]** exécution de mission écrite et routée · **[X] aucun écran ouvert à ce jour |
-| Espaces société / admin | ⚠️ **1 écran sur 8 branché** | **[V]** `(company)/index.tsx` lit 4 hooks réels · **[V]** 7 autres sans aucune lecture |
+| Espaces société / admin | ✅ **8 écrans branchés** | **[V]** les 4 écrans vides branchés aux services le 2026-09-30 · **[X] aucun rouvert à l'écran |
 | **Routage** | ✅ **Désambiguïsé** | **[V]** 22 URL publiques, **0 doublon** · `/profile` et `/missions` n'existent plus |
 | **Écran 404** | ✅ **Créé** | **[V]** `+not-found.tsx` · **[V]** `dist/+not-found.html` généré · **[X]** non rouvert à l'écran |
 | **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet (3 valeurs sur 4 vides, constaté le 2026-09-29) · **[X]** jamais exécuté |
@@ -543,8 +543,8 @@ précédent, 91, datait d'avant le lot design system.
 | `(auth)` | `sign-in`, `sign-up`, `role-selection` | ✅ |
 | `(client)` | `index`, `missions-client`, `mission/new`, `mission-suivi/[id]`, `prestation/[id]`, `search`, `profil-client` | ✅ 7 sur 7 |
 | `(agent)` | `index`, `profil-agent`, `missions-agent`, `availability`, `mission-execution/[id]` | ✅ 5 sur 5, **[X] aucun ouvert** |
-| `(company)` | `index` ✅ · `profil-societe`, `missions-societe`, `team` ❌ | ⚠️ **1 sur 4 branché** |
-| `(admin)` | `index`, `profil-admin` ⚠️ · `missions-admin`, `users` ❌ | ⚠️ **2 sur 4 branchés** |
+| `(company)` | `index` · `profil-societe` · `missions-societe` · `team` — **tous branchés** | ✅ **4 sur 4** · **[X] aucun rouvert |
+| `(admin)` | `index` · `profil-admin` · `missions-admin` · `users` — **tous branchés** | ✅ **4 sur 4** · **[X] aucun rouvert |
 | racine | `index` (`StartupGate`), `welcome`, **`+not-found`** | ✅ |
 
 > **Noms renommés le 2026-09-30.** Les quatre groupes partageaient `profile`
@@ -567,14 +567,51 @@ sans que le tableau soit repris.
 
 | Mesure | Valeur |
 |---|---|
-| Écrans de `src/app` important `@/features`, `@/services` ou `@/hooks` | **13 sur 27** |
+| Écrans de `src/app` important `@/features`, `@/services` ou `@/hooks` | **13 sur 27** avant le branchement, **17 sur 27** après |
 | `(company)/index.tsx` | **4 hooks** : `useMaFicheSociete`, `useMonEquipe`, `useMesAffectationsSociete`, `usePortefeuille` |
-| Écrans sans aucune lecture | `(admin)/missions-admin` · `(company)/missions-societe` · `(company)/team` · `(admin)/users` — 1 206 à 1 366 octets |
-| Services écrits **non appelés par un écran** | `administration.service.ts` (178 o) · `companies.service.ts` (171 o) · `documents.service.ts` · `portefeuille.service.ts` |
+| Services écrits **non appelés par un écran** | aucun : les 4 écrans vides sont branchés le 2026-09-30 |
+| Écrans sans aucune lecture | **aucun** — les 27 écrans lisent la base ou la session |
 
-La couche de données existe. **Le dernier kilomètre — l'appel depuis l'écran —
-n'est pas fait.** C'est la même distinction que « codé » et « terminé » : du
-code non exécuté n'est pas une fonctionnalité.
+La couche de données existait depuis le commit `52d7196`. **Le dernier
+kilomètre — l'appel depuis l'écran — n'a été fait que le 2026-09-30.** C'est la
+même distinction que « codé » et « terminé » : du code non exécuté n'est pas une
+fonctionnalité.
+
+### Les 4 écrans branchés le 2026-09-30 **[V]**
+
+| Écran | Service branché | Ce que l'écran affiche |
+|---|---|---|
+| `(company)/team.tsx` | `companiesService.getMyTeam` | agents rattachés, statut, zone, disponibilité |
+| `(company)/missions-societe.tsx` | `missionsService.getCompanyMissions` | affectations reçues, pointages, budget |
+| `(admin)/users.tsx` | `administrationService.getDossiersEnAttente` | file de validation, par statut |
+| `(admin)/missions-admin.tsx` | **nouveau** `useMissionsAdmin` | toutes les missions, filtrage local par statut |
+
+**Une seule migration a été nécessaire : aucune.** La lecture globale des
+missions par un administrateur était déjà autorisée — `private.can_view_mission`
+commence par `private.is_admin()` (`20260925000200_rls_helpers.sql:35`). Ce qui
+manquait était l'écran, pas le droit.
+
+### Trois boutons qui ont été supprimés, et pourquoi **[V]**
+
+Les quatre écrans affichaient un texte d'état vide et un bouton. Dans les trois
+cas suivants, le bouton promettait une fonction qui n'existe pas :
+
+| Bouton retiré | Pourquoi |
+|---|---|
+| « Inviter un agent » | aucune fonction serveur ne rattache un agent à une société |
+| « Rechercher des missions » | aucun appel d'offres : `missions` est créé par un client |
+| (validation admin) | aucune des 11 RPC ne change un statut de prestataire |
+
+> Un bouton qui ne fait rien est **pire que son absence** : il promet une action
+> que l'application ne sait pas exécuter, et l'utilisateur croirait à une panne.
+> Les écrans annoncent désormais explicitement que la décision se prend hors
+> application.
+
+### Ce qui n'a pas été fait, et pourquoi **[V]**
+
+Les **écrans de validation et d'annulation** n'ont pas été ajoutés. Ils
+nécessiteraient de nouvelles fonctions serveur, donc une migration — décision
+qui vous revient, et que ce lot n'a pas prise à votre place.
 
 ### Fichiers racine
 
@@ -1383,6 +1420,13 @@ Quatre règles en découlent, et elles s'appliquent à tout contrôle ajouté :
 | 2026-09-29 | **Écran d'exécution : trois blocs ajoutés** — durée prévue dans la pastille du chrono (`end_time - start_time`, « · dépassée » écrit en toutes lettres, retard mesuré depuis l'arrivée réelle), « Journal de vacation » (`created_at`, `check_in_time`, `check_out_time` ; `updated_at` écarté car il bouge à chaque écriture), « Consignes du client » remontées en tête. Sept blocs de la maquette restent sans source et **ne sont pas simulés** : NFC, rondes, PTI, batterie, MCE, caméra, code portail en colonne. `expo-battery` et `mission_events` refusés, la seconde relevant de l'étape 11. `tsc`, `eslint .`, `check:supabase`, `expo export` verts. **Aucun rendu à l'écran** |
 | 2026-09-29 | **`test:parcours` : tentative de lancement, bloquée.** `.env.test` existe et est ignoré par git, mais seul `TEST_AGENT_EMAIL` est renseigné ; les deux mots de passe et l'email client sont vides. Commande **non exécutée**, aucun identifiant inventé. Le test ne couvre de toute façon pas `enregistrerRapport`. Rapport mis à jour : statut « amorcée, bloquée », état de `.env.test`, périmètre du test. **Aucune vérification nouvelle** |
 | 2026-09-29 | **Audit de reprise, à partir du cadrage « développeur senior » — aucun code écrit.** Mesuré : Node 24.15.0, Expo 57.0.27, `tsc` exit 0, `npx eslint .` exit 0, `check:supabase` conforme, `.env` avec les 2 variables Supabase renseignées. **Risque relevé : 105 entrées non commitées (56 fichiers modifiés ou supprimés, 49 non suivis), +4 344 / −1 181 lignes.** Le dernier commit date du 2026-09-28 : tout le design system, l'accueil agent, l'écran d'exécution de mission et les services société / documents / administration n'existent que dans le répertoire de travail. Aucune sauvegarde git. **Écart avec l'architecture cible :** `features/chat`, `payments`, `notifications`, `reviews` sont des dossiers vides ; `expo-notifications`, Stripe, cartographie et `expo-location` ne sont pas installés (cohérent avec les étapes 10 et 11 non commencées) |
+| 2026-09-30 | **DÉFAUT 12 — quatre fichiers pour une seule URL.** Constaté par le commanditaire sur `localhost:8081/profile`. Un groupe entre parenthèses n'entre pas dans l'URL : `(client)/profile`, `(agent)/profile`, `(company)/profile` et `(admin)/profile` produisaient **tous** `/profile`. Idem `/missions` (×4) et `/mission/[id]` (×2) — **onze URL publiques pour huit écrans**. Le routeur élisait un vainqueur arbitraire et `ProtectedRoute` redirigeait vers `role-selection` si le rôle ne correspondait pas. La navigation interne n'était pas cassée : les 12 `router.push` portaient le groupe. **Aucun des trois contrôles obligatoires ne l'aurait vu** — `typedRoutes` valide la forme d'une chaîne, pas son unicité. Corrigé par suffixes d'espace (`profil-client`, `missions-agent`, `mission-suivi/[id]`, `mission-execution/[id]`) : 24 occurrences dans 9 fichiers, 10 `Tabs.Screen` dans 4 layouts, renommages par `git mv`. Vérifié : `tsc` vide, `eslint .` exit 0, `check:supabase` conforme, **table de routes régénérée = 22 URL publiques, 0 doublon** |
+| 2026-09-30 | **LE CACHE METRO A MENTI, ET IL L'AVAIT DÉJÀ FAIT.** Le premier relevé de la table de routes, après les renommages, affichait *encore* `/profile` et `/missions` **en plus** des nouveaux noms. Fichier daté d'avant les modifications : `.expo/types/router.d.ts` ne se régénère qu'au **démarrage** du serveur de dev, et le supprimer ne suffit pas. Après redémarrage, le fichier est passé de 16 009 à 12 069 octets. Sans ce contrôle, la correction aurait été déclarée non faite |
+| 2026-09-30 | **`expo export` manquait, et il l'a déjà rattrapé une fois.** Le renommage du 30 a été publié sur la foi de `tsc` + `eslint` + table de types — **aucun ne construit le bundle**. L'export a ensuite réussi sur les 4 écrans du lot suivant. Règle appliquée désormais : `npx expo export` **puis** `npx eslint .`, dans cet ordre |
+| 2026-09-30 | **Écran 404 créé.** `src/app/+not-found.tsx` — il n'en existait **aucun** : toute URL erronée affichait un écran vide, sans explication. Conséquence directe du défaut 12. L'écran **constate** sans **supposer** : il n'affirme pas que la page n'existe pas (l'URL peut être valide et le code cassé), il affiche l'adresse fautive telle que reçue et propose l'accueil du bon rôle via `getRoleHomeRoute` — un `/(client)` fixe aurait renvoyé un prestataire vers une garde qui le refuse, donc en boucle. Vérifié : `dist/+not-found.html` généré, texte présent. **Non rouvert à l'écran** |
+| 2026-09-30 | **Évaluation mesurée, et trois affirmations du rapport fausses.** « Espaces société / admin : écrans vides, aucune requête de donnée » était **faux** : 13 écrans sur 27 importaient `features`/`services`/`hooks`, et `(company)/index.tsx` en lisait 4. Les compteurs de dossiers étaient périmés eux aussi — `src/app` 31 → 35, `components` 25 → 32, `features` 12 → 23, `services` 5 → 9, total **91 → 117 fichiers**. Corrigé au mesuré. Un rapport qui sous-estime son propre projet fait retravailler ce qui existe |
+| 2026-09-30 | **Les 4 écrans vides branchés aux services existants.** `(company)/team` → `getMyTeam`, `(company)/missions-societe` → `getCompanyMissions`, `(admin)/users` → `getDossiersEnAttente`, `(admin)/missions-admin` → **nouveau** `useMissionsAdmin`. **Aucune migration nécessaire** : `can_view_mission` commence par `private.is_admin()` (`20260925000200_rls_helpers.sql:35`), donc l'administrateur ouvrait déjà toutes les lignes — ce qui manquait était l'écran, pas le droit. **17 écrans sur 27** lisent désormais la base, et **aucun service écrit n'est orphelin**. Trois boutons supprimés parce qu'ils promettaient des fonctions inexistantes : « Inviter un agent », « Rechercher des missions », validation admin. Les états chargement / erreur / vide sont distincts, et l'erreur affichée est traduite par `toUserFacingError` |
+| 2026-09-30 | **Limite assumée de ce lot.** Les écrans de validation et d'annulation **n'ont pas** été ajoutés : ils exigent de nouvelles fonctions serveur, donc une migration — décision qui revient au commanditaire. Aucun des 8 écrans de ces deux espaces n'a été rouvert à l'écran |
 
 
 
