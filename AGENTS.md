@@ -49,10 +49,16 @@ sécurité. React Native / Expo, backend Supabase (PostgreSQL + Auth + RLS).
 npm run typecheck     # doit être vide
 npm run lint          # doit être vide
 npm run check:supabase # doit dire RESULTAT : conforme
+npm run check:routes   # doit dire RESULTAT : conforme
 ```
 
 `npm run lint` ne couvre que `src/`. Pour l'ensemble du dépôt, y compris
 `scripts/` : `npx eslint .`.
+
+`npm run check:routes` est le **quatrième** contrôle, ajouté le 2026-09-30
+après le défaut 12. Il détecte deux écrans qui publient la même URL — ce qu'aucun
+des trois autres ne peut voir, car `typedRoutes` valide la forme d'une chaîne et
+non son unicité.
 
 ## Diagnostic : ne pas se fier au faux vert
 
