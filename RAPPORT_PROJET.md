@@ -52,7 +52,7 @@
 | Espaces société / admin | ✅ **8 écrans branchés** | **[V]** les 4 écrans vides branchés aux services le 2026-09-30 · **[X] aucun rouvert à l'écran |
 | **Routage** | ✅ **Désambiguïsé et contrôlé** | **[V]** 23 URL publiques, **0 doublon** · **[V]** `npm run check:routes` conforme, auto-test 8 cas |
 | **Écran 404** | ✅ **Créé** | **[V]** `+not-found.tsx` · **[V]** `dist/+not-found.html` généré · **[X]** non rouvert à l'écran |
-| **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `.env.test` incomplet (3 valeurs sur 4 vides, constaté le 2026-09-29) · **[X]** jamais exécuté |
+| **Étape 12 — qualité** | ⚠️ **amorcée, bloquée** | **[V]** `test:parcours` écrit · **[V]** `GUIDE_VALIDATION_ECRAN.md` écrit (281 lignes, 12 écrans) · **[V]** `.env.test` incomplet — 3 valeurs sur 4 vides · **[X] jamais exécuté |
 
 ---
 
